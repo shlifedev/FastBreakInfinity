@@ -1,0 +1,16 @@
+{
+  "name": "com.shlifedev.numeric",
+  "displayName": "LD.Numeric",
+  "version": "0.9.5",
+  "unity": "2019.3",
+  "author": "shlifedev", 
+  "keywords": [
+    "unity",
+    "big-number",
+    "numeric"
+  ],
+  "description": "LD Number Set.",
+  "category": "Core",
+  "dependencies": { 
+  }
+}

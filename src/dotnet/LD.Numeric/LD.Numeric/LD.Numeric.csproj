@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework> 
+        <Nullable>enable</Nullable>
+        <LangVersion>12</LangVersion>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+    
+    <ItemGroup>
+
+        <Compile Include="../../../unity/Assets/LD.Numeric/Runtime/**/*.cs">
+            <Link>LD.Numeric/Runtime\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </Compile>
+        
+        <Content Include="../../../unity/Assets/LD.Numeric/**/*.json">
+            <Link>LD.Numeric\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </Content>
+    </ItemGroup>
+ 
+ 
+</Project>
