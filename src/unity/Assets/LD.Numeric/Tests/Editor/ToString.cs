@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using LD;
+using LD.Numeric;
 using NUnit.Framework;
 using UnityEditor.Experimental;
 using UnityEditor.VersionControl;
