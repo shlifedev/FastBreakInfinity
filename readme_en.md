@@ -1,8 +1,8 @@
 # LD.Numeric
 
 <p align="center">
-<a href="/README_KR.md">  한국어  </a> 
-<a href="/README.md">  English  </a>
+<a href="/readme_ko.md">  한국어  </a> 
+<a href="/readme_en.md">  English  </a>
 </p>
 
 It is an extended fork of [BreakInfinity] (https://github.com/Razenpok/BreakInfinity.cs).
