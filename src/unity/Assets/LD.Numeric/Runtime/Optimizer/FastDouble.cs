@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 
-namespace LD
+namespace LD.Numeric
 { 
     public static class FastDouble
     { 

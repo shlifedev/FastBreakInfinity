@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace LD.Numeric.ProbabilityTable
+namespace LD.Numeric
 {
     
     public class ProbabilityTable<T> where T : IProbaiblityItem

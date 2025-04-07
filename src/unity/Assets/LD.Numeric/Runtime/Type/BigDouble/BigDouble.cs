@@ -5,7 +5,7 @@ using System.Numerics;
 using LD.Numeric;
 using Random = System.Random;  
 
-namespace LD
+namespace LD.Numeric
 { 
     
     public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>

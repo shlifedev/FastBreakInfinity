@@ -1,6 +1,6 @@
 {
-    "name": "com.shlifedev.numeric.runtime",
-    "rootNamespace": "",
+    "name": "LD.Numeric.Runtime",
+    "rootNamespace": "LD.Numeric",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

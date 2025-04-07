@@ -1,7 +1,6 @@
 using System;
-using LD.Numeric.Runtime;
 
-namespace LD.Numeric.ProbabilityTable
+namespace LD.Numeric
 {
     
     public class DefaultRandomizer : IRandomizer

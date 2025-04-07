@@ -7,7 +7,7 @@ using LD.Numeric;
 // I'm not sure if there's a "Yes, this is Unity" define symbol
 // (#if UNITY doesn't seem to work). If you happen to know one - please create
 // an issue here https://github.com/Razenpok/FastBigDouble.cs/issues. 
-namespace LD
+namespace LD.Numeric
 { 
     public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
     {

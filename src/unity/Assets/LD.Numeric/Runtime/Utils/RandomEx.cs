@@ -1,6 +1,6 @@
 using System;
 
-namespace LD.Numeric.Runtime
+namespace LD.Numeric
 {
     public static class RandomEx
     {

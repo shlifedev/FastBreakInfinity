@@ -1,6 +1,6 @@
 using System;
 
-namespace LD.Numeric.ProbabilityTable
+namespace LD.Numeric
 {
     public interface IRandomizer
     {

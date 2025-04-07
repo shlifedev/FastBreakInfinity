@@ -1,4 +1,4 @@
-namespace LD
+namespace LD.Numeric
 { 
     public struct BigValueInfo
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics; 
-namespace LD
+namespace LD.Numeric
 { 
     public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
     {

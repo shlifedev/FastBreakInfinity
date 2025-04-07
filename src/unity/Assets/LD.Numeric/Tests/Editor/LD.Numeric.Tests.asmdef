@@ -1,10 +1,10 @@
 {
-    "name": "com.shlifedev.numeric.test.editor",
+    "name": "LD.Numeric.Tests",
     "rootNamespace": "",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "com.shlifedev.numeric.runtime"
+        "LD.Numeric.Runtime"
     ],
     "includePlatforms": [
         "Editor"
