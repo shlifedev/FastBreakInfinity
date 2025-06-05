@@ -1,4 +1,4 @@
-# LD.Numeric
+# Fast Idle Number
 
 <p align="center">
 <a href="/readme_ko.md">  한국어  </a> 
