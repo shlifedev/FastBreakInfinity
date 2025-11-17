@@ -40,7 +40,7 @@ namespace LD.Numeric.IdleNumber
 
                     if (c == '+')
                     {
-                        continue; // Ignore the '+' sign
+                        continue;  
                     }
 
                     int digit = c - '0';
@@ -64,7 +64,7 @@ namespace LD.Numeric.IdleNumber
 
                     if (c == '+')
                     {
-                        continue; // Ignore the '+' sign
+                        continue;  
                     }
 
                     exponent = exponent * 10 + (c - '0');

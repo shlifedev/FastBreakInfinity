@@ -1,4 +1,6 @@
-using System; 
+using System;
+using Cysharp.Text;
+
 namespace LD.Numeric.IdleNumber
 {
     public static class FastDouble
@@ -98,8 +100,14 @@ namespace LD.Numeric.IdleNumber
             if (double.IsInfinity(value))
                 return value > 0 ? "Infinity" : "-Infinity";
             if (value == 0)
-                return "0." + new string('0', decimalPlaces);
-
+            {
+                using (var sb = ZString.CreateStringBuilder())
+                {
+                    sb.Append("0.");
+                    sb.Append('0', decimalPlaces);
+                    return sb.ToString();
+                }
+            }
             Span<char> buffer = stackalloc char[32];
             int pos = 0;
             if (value < 0)
@@ -124,8 +132,7 @@ namespace LD.Numeric.IdleNumber
             {
                 throw;
             }
-
-            return new string(buffer.Slice(0, pos));
+            return buffer.Slice(0, pos).ToString();
         }
 
         private static int IntegerToString(long value, Span<char> buffer, int minLength = 1)

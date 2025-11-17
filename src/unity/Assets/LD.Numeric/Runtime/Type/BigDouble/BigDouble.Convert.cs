@@ -1,9 +1,6 @@
 using System;
 using System.Text; 
-
-// I'm not sure if there's a "Yes, this is Unity" define symbol
-// (#if UNITY doesn't seem to work). If you happen to know one - please create
-// an issue here https://github.com/Razenpok/FastBigDouble.cs/issues.
+ 
 namespace LD.Numeric.IdleNumber
 {
     public partial struct BigDouble
@@ -11,16 +8,12 @@ namespace LD.Numeric.IdleNumber
         /// <summary>
         /// BigDouble의 소수점 정확도
         /// </summary>
-        public static int FRACTIONAL_PART_ACCURITY = 6;
-
-        public static Action<object> logger;
-        public static Action<object> logger_err;
-        private static StringBuilder unitSb = new StringBuilder();
-
+        static int FRACTIONAL_PART_ACCURITY = 6;  
+        
         /// <summary>
         /// 몇 단위로 자를건지
         /// </summary>
-        public const int EXPONENT_UNIT = 3;
+        static int EXPONENT_UNIT = 3;
 
         public static (long rangeA, long rangeB) GetExponentFromAlphabetUnit(string unit)
         {

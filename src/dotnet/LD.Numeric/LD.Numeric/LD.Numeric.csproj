@@ -15,4 +15,8 @@
             <Link>LD.Numeric\%(RecursiveDir)%(Filename)%(Extension)</Link>
         </Content>
     </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ZString" Version="2.6.0" />
+    </ItemGroup>
 </Project>

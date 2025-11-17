@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using Cysharp.Text;
 using LD.Numeric.IdleNumber;
 using Random = System.Random;
 
@@ -81,7 +82,7 @@ namespace LD.Numeric.IdleNumber
                 return Zero;
             }
 
-            var tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
+            long tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
             //SAFETY: handle 5e-324, -5e-324 separately
             if (tempExponent == DoubleExpMin)
             {
@@ -90,8 +91,7 @@ namespace LD.Numeric.IdleNumber
             else
             {
                 mantissa = mantissa / PowersOf10.Lookup(tempExponent);
-            }
-
+            } 
             return FromMantissaExponentNoNormalize(mantissa, exponent + tempExponent);
         }
 
@@ -217,6 +217,10 @@ namespace LD.Numeric.IdleNumber
         }
  
         
+        public string ToStringMantissaExponent()
+        { 
+            return ZString.Format("{0}e{1}", mantissa, exponent);
+        }
         public override string ToString()
         { 
             var adjustedMantissa = AdjustedMantissa();

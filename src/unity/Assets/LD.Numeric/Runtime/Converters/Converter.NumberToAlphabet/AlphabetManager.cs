@@ -7,6 +7,15 @@ namespace LD.Numeric.IdleNumber
         static Dictionary<long, string> unitCache = new Dictionary<long, string>();
         static Dictionary<string, long> reverseUnitCache = new Dictionary<string, long>();
 
+#if UNITY_EDITOR
+[UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+#endif
+        internal static void Reset()
+        {
+            unitCache.Clear();
+            reverseUnitCache.Clear();
+        }
+        
         /// <summary>
         /// Exponent 인덱스를 가져 옴 = A = 0, B = 1, C = 2
         /// </summary>
