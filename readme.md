@@ -30,12 +30,8 @@ It is exactly the same as BigInfinity.cs, but it must follow these rules
 
 Simple.
 ```cs
-BigDouble _ = new BigDouble("1000"); // Number Constructor
-BigDouble _ = new BigDouble("1.0A"); // Alphabet Constructor
-BigDouble _ = new BigDouble("999.9A"); // Alphabet Constructor
-BigDouble _ = new BigDouble("1000A"); // Alphabet Constructur, But It's Throw Error. Alphabet Number Allow -999.9~999.9 for performance.
+BigDouble _ = new BigDouble("1000000000000000000000"); // Number Constructor
 BigDouble _ = new BigDouble("9.999e100"); // Exponent Constructor. It's Very Fast!!!!
-BigDouble _ = new BigDouble("100e100"); // Exponent Constructor.
 new BigDouble(1e3).ToString() // Result = "1.0A"
 ```
 
