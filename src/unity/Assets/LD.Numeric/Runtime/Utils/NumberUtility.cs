@@ -1,6 +1,6 @@
 using System;
 
-namespace LD.Numeric
+namespace LD.Numeric.IdleNumber
 {
     public static class NumberUtility
     {
@@ -13,7 +13,6 @@ namespace LD.Numeric
                 number /= 10;
                 digits++;
             }
-
 
             return digits;
         }

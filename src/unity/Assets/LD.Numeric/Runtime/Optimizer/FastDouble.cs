@@ -1,11 +1,8 @@
-using System;
-using System.Globalization;
-using System.Linq;
-
-namespace LD.Numeric
-{ 
+using System; 
+namespace LD.Numeric.IdleNumber
+{
     public static class FastDouble
-    { 
+    {
         /// <summary>
         /// 스트링을 더블로 변환함
         /// </summary>
@@ -18,8 +15,8 @@ namespace LD.Numeric
             if (string.IsNullOrEmpty(s))
             {
                 return 0;
-            } 
-            if (maxDecimalPlaces < 0) 
+            }
+            if (maxDecimalPlaces < 0)
                 maxDecimalPlaces = 0;
             bool isNegative = s[0] == '-';
             int startIndex = isNegative || s[0] == '+' ? 1 : 0;
@@ -43,7 +40,8 @@ namespace LD.Numeric
                     else if (decimalPlaces < maxDecimalPlaces || !hasDecimal)
                     {
                         mantissa = mantissa * 10.0 + (c - '0');
-                        if (hasDecimal) decimalPlaces++;
+                        if (hasDecimal)
+                            decimalPlaces++;
                     }
                     else if (decimalPlaces == maxDecimalPlaces)
                     {
@@ -60,9 +58,9 @@ namespace LD.Numeric
                     hasExponent = true;
                     if (i + 1 < s.Length && (s[i + 1] == '-' || s[i + 1] == '+'))
                     {
-                        if(s[i+1] == '-') 
-                            negativeExponent = true; 
-                        exponent = s[i + 1] == '-' ? -exponent : exponent; 
+                        if (s[i + 1] == '-')
+                            negativeExponent = true;
+                        exponent = s[i + 1] == '-' ? -exponent : exponent;
                         i++;
                     }
                 }
@@ -80,43 +78,51 @@ namespace LD.Numeric
             if (hasExponent)
             {
                 mantissa *= Math.Pow(10.0, negativeExponent ? -exponent : exponent);
-            } 
+            }
             return isNegative ? -mantissa : mantissa;
         }
-        
-         
+
         public static string OptimizeToString(this double value, int decimalPlaces)
         {
             value = Math.Round(value, 3);
-            if (decimalPlaces == 0) return value.ToString("0");
+            if (decimalPlaces == 0)
+                return value.ToString("0");
             if (decimalPlaces < 0)
-                throw new ArgumentOutOfRangeException(nameof(decimalPlaces), "Decimal places cannot be negative.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(decimalPlaces),
+                    "Decimal places 는 음수일 수 없습니다."
+                );
 
-             
-            if (double.IsNaN(value)) return "NaN";
-            if (double.IsInfinity(value)) return value > 0 ? "Infinity" : "-Infinity";
-            if (value == 0) return "0." + new string('0', decimalPlaces);
+            if (double.IsNaN(value))
+                return "NaN";
+            if (double.IsInfinity(value))
+                return value > 0 ? "Infinity" : "-Infinity";
+            if (value == 0)
+                return "0." + new string('0', decimalPlaces);
 
-            Span<char> buffer = stackalloc char[32];  
-            int pos = 0; 
+            Span<char> buffer = stackalloc char[32];
+            int pos = 0;
             if (value < 0)
             {
                 buffer[pos++] = '-';
                 value = -value;
             }
- 
+
             long integerPart = (long)value;
-            double fractionalPart = value - integerPart;  
-            pos += IntegerToString(integerPart, buffer.Slice(pos)); 
-            buffer[pos++] = '.'; 
-            fractionalPart = Math.Round(fractionalPart * Math.Pow(10, decimalPlaces), decimalPlaces);
+            double fractionalPart = value - integerPart;
+            pos += IntegerToString(integerPart, buffer.Slice(pos));
+            buffer[pos++] = '.';
+            fractionalPart = Math.Round(
+                fractionalPart * Math.Pow(10, decimalPlaces),
+                decimalPlaces
+            );
             try
             {
                 pos += IntegerToString((long)fractionalPart, buffer.Slice(pos), decimalPlaces);
             }
-            catch(Exception e)
-            { 
-                throw e;
+            catch (Exception e)
+            {
+                throw;
             }
 
             return new string(buffer.Slice(0, pos));
@@ -129,16 +135,11 @@ namespace LD.Numeric
             {
                 buffer[pos++] = (char)('0' + value % 10);
                 value /= 10;
-            }
-
-            // Reverse the characters
-            for (int i = 0; i < pos / 2; i++)
-            {
-                (buffer[i], buffer[pos - i - 1]) = (buffer[pos - i - 1], buffer[i]);
-            }
+            } 
+            for (int i = 0; i < pos / 2; i++) 
+                (buffer[i], buffer[pos - i - 1]) = (buffer[pos - i - 1], buffer[i]); 
 
             return pos;
         }
-        
     }
 }

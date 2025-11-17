@@ -6,6 +6,7 @@ using NUnit.Framework;
 using UnityEditor.Experimental;
 using UnityEditor.VersionControl;
 using UnityEngine;
+
 public class ToString
 {
     [Test]
@@ -14,7 +15,6 @@ public class ToString
         // zero decimal point
         BigDouble p = new BigDouble(1.123456);
         Assert.IsTrue(p.ToString(0).Split(".").Length == 1);
-
 
         for (int i = 1; i < 15; i++)
         {

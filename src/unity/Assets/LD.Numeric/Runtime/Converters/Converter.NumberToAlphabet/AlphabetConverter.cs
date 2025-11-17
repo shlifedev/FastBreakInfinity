@@ -1,13 +1,11 @@
 using System;
 using System.Globalization;
-using System.Numerics; 
+using System.Numerics;
 using LD;
 
-namespace LD.Numeric
+namespace LD.Numeric.IdleNumber
 {
-
-
-    public static partial class AlphabetConverter
+    public static class AlphabetConverter
     {
         public static long GetExponent(double value)
         {
@@ -39,8 +37,6 @@ namespace LD.Numeric
             return exponent;
         }
 
-
-
         #region 알파벳포함값 => 일반값 역함수
 
         public static double ConvertFromAlphabetUnit(string str)
@@ -60,14 +56,14 @@ namespace LD.Numeric
 
         #region Value To Alphabet
 
-        public static string ConvertToAlphabetUnit(this int number,int maxDecimalPoint = 2)
+        public static string ConvertToAlphabetUnit(this int number, int maxDecimalPoint = 2)
         {
             if (number < 1000)
                 return number.ToString(CultureInfo.InvariantCulture);
             long exponent = GetExponent(number);
 
             double divisor = Math.Pow(10, exponent);
-            double newNumber = (number / divisor); 
+            double newNumber = (number / divisor);
             string unit = AlphabetManager.GetAlphabetUnitFromExponent(exponent);
             return $"{newNumber.ToString($"F{maxDecimalPoint}")}{unit}";
         }

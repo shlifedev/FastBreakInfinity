@@ -9,24 +9,12 @@ namespace Tests.Editor
     public class PercentValueTest
     {
         [Test]
-        public void Equal()
-        { 
-        }
-
-        
-        [Test]
-        public void DoubleToPerValue()
-        { 
-        }
+        public void Equal() { }
 
         [Test]
-        public void MulTest()
-        { 
-        }
+        public void DoubleToPerValue() { }
 
-
-
-
-
+        [Test]
+        public void MulTest() { }
     }
 }

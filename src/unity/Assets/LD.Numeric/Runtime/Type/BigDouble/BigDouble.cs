@@ -2,16 +2,13 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
-using LD.Numeric;
-using Random = System.Random;  
+using LD.Numeric.IdleNumber;
+using Random = System.Random;
 
-namespace LD.Numeric
-{ 
-    
-    public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
+namespace LD.Numeric.IdleNumber
+{
+    public partial struct BigDouble
     {
-        
-        
         public const double Tolerance = 1e-18;
 
         //for example: if two exponents are more than 17 apart, consider adding them together pointless, just return the larger one
@@ -24,14 +21,15 @@ namespace LD.Numeric
 
         //The smallest exponent that can appear in a Double, though not all mantissas are valid here.
         private const long DoubleExpMin = -324;
- 
-        private double mantissa; 
-        
-        private long exponent;  
+
+        private double mantissa;
+
+        private long exponent;
+
         // This constructor is used to prevent non-normalized values to be created via constructor.
         // ReSharper disable once UnusedParameter.Local
         private BigDouble(double mantissa, long exponent, PrivateConstructorArg _)
-        { 
+        {
             this.mantissa = mantissa;
             this.exponent = exponent;
         }
@@ -40,17 +38,15 @@ namespace LD.Numeric
         {
             this = Normalize(mantissa, exponent);
         }
- 
+
         public BigDouble(BigDouble other)
         {
             mantissa = other.mantissa;
             exponent = other.exponent;
         }
 
- 
         public BigDouble(double value)
         {
-             
             //SAFETY: Handle Infinity and NaN in a somewhat meaningful way.
             if (double.IsNaN(value))
             {
@@ -119,14 +115,20 @@ namespace LD.Numeric
             return double.IsNaN(value.Mantissa);
         }
 
-        public static BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(double.PositiveInfinity, 0);
+        public static BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(
+            double.PositiveInfinity,
+            0
+        );
 
         public static bool IsPositiveInfinity(BigDouble value)
         {
             return double.IsPositiveInfinity(value.Mantissa);
         }
 
-        public static BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(double.NegativeInfinity, 0);
+        public static BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(
+            double.NegativeInfinity,
+            0
+        );
 
         public static bool IsNegativeInfinity(BigDouble value)
         {
@@ -141,7 +143,7 @@ namespace LD.Numeric
         public static BigDouble Parse(string value)
         {
             if (value.IndexOf('e') != -1)
-            { 
+            {
                 var info = BigValueInfo.ExponentFormatToBigValueInfo(value);
                 return Normalize(info.Mantissa, info.Exponent);
             }
@@ -160,11 +162,11 @@ namespace LD.Numeric
             return result;
         }
 
-
         public float ToFloat()
         {
             return (float)this.Mantissa;
         }
+
         public double ToDouble()
         {
             if (IsNaN(this))
@@ -195,28 +197,30 @@ namespace LD.Numeric
             }
 
             var resultrounded = Math.Round(result);
-            if (Math.Abs(resultrounded - result) < 1e-10) return resultrounded;
+            if (Math.Abs(resultrounded - result) < 1e-10)
+                return resultrounded;
             return result;
         }
 
-
-        public string ToString(int decimalCount)
+        
+        internal string CreateString(int decimalCount)
         {
             var adjustedMantissa = AdjustedMantissa();
-            adjustedMantissa = Math.Round(adjustedMantissa, 3);  
+            adjustedMantissa = Math.Round(adjustedMantissa, 3);
             if (exponent < 3)
-            { 
+            {
                 return adjustedMantissa.OptimizeToString(decimalCount);
             }
-            
-            return adjustedMantissa.OptimizeToString(decimalCount) + AlphabetManager.GetAlphabetUnitFromExponent(this.exponent);
+
+            return adjustedMantissa.OptimizeToString(decimalCount)
+                + AlphabetManager.GetAlphabetUnitFromExponent(this.exponent);
         }
  
+        
         public override string ToString()
         { 
-            
             var adjustedMantissa = AdjustedMantissa();
-            adjustedMantissa = Math.Round(adjustedMantissa, 3); 
+            adjustedMantissa = Math.Round(adjustedMantissa, 3);
             var digits = NumberUtility.GetDigits(adjustedMantissa);
             int decimalCount = 0;
             switch (digits)
@@ -233,18 +237,14 @@ namespace LD.Numeric
                 case 3:
                     decimalCount = 0;
                     break;
-                default: 
+                default:
                     break;
-            } 
+            }
             if (exponent <= 2 && mantissa > -10 && mantissa < 10)
                 decimalCount = 0;
-            return ToString(decimalCount);
-        } 
+            return CreateString(decimalCount);
+        }
 
-        
- 
-        
-        
         public static BigDouble Abs(BigDouble value)
         {
             return FromMantissaExponentNoNormalize(Math.Abs(value.Mantissa), value.Exponent);
@@ -382,7 +382,8 @@ namespace LD.Numeric
                 return left.Mantissa + right.Mantissa;
             }
 
-            BigDouble bigger, smaller;
+            BigDouble bigger,
+                smaller;
             if (left.Exponent >= right.Exponent)
             {
                 bigger = left;
@@ -402,9 +403,14 @@ namespace LD.Numeric
             //have to do this because adding numbers that were once integers but scaled down is imprecise.
             //Example: 299 + 18
             return Normalize(
-                Math.Round(1e14 * bigger.Mantissa + 1e14 * smaller.Mantissa *
-                           PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)),
-                bigger.Exponent - 14);
+                Math.Round(
+                    1e14 * bigger.Mantissa
+                        + 1e14
+                            * smaller.Mantissa
+                            * PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)
+                ),
+                bigger.Exponent - 14
+            );
         }
 
         public static BigDouble Subtract(BigDouble left, BigDouble right)
@@ -432,13 +438,12 @@ namespace LD.Numeric
         {
             return new BigDouble(value);
         }
-        
-        
+
         public static implicit operator BigDouble(string value)
         {
             return new BigDouble(value);
         }
-        
+
         public static explicit operator BigDouble(BigInteger value)
         {
             return new BigDouble(value.ToString());
@@ -502,7 +507,7 @@ namespace LD.Numeric
             }
             if (other is BigDouble)
             {
-                return CompareTo((BigDouble) other);
+                return CompareTo((BigDouble)other);
             }
             throw new ArgumentException("The parameter must be a BigDouble.");
         }
@@ -510,11 +515,14 @@ namespace LD.Numeric
         public int CompareTo(BigDouble other)
         {
             if (
-                IsZero(Mantissa) || IsZero(other.Mantissa)
-                || IsNaN(this) || IsNaN(other)
-                || IsInfinity(this) || IsInfinity(other))
-            {
-                // Let Double handle these cases.
+                IsZero(Mantissa)
+                || IsZero(other.Mantissa)
+                || IsNaN(this)
+                || IsNaN(other)
+                || IsInfinity(this)
+                || IsInfinity(other)
+            )
+            { 
                 return Mantissa.CompareTo(other.Mantissa);
             }
             if (Mantissa > 0 && other.Mantissa < 0)
@@ -547,8 +555,12 @@ namespace LD.Numeric
 
         public bool Equals(BigDouble other)
         {
-            return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
-                || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa));
+            return !IsNaN(this)
+                && !IsNaN(other)
+                && (
+                    AreSameInfinity(this, other)
+                    || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa)
+                );
         }
 
         /// <summary>
@@ -560,8 +572,12 @@ namespace LD.Numeric
         /// </summary>
         public bool Equals(BigDouble other, double tolerance)
         {
-            return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
-                || Abs(this - other) <= Max(Abs(this), Abs(other)) * tolerance);
+            return !IsNaN(this)
+                && !IsNaN(other)
+                && (
+                    AreSameInfinity(this, other)
+                    || Abs(this - other) <= Max(Abs(this), Abs(other)) * tolerance
+                );
         }
 
         private static bool AreSameInfinity(BigDouble first, BigDouble second)
@@ -586,18 +602,22 @@ namespace LD.Numeric
             {
                 return false;
             }
-            
-            if (IsZero(a.Mantissa)) return b.Mantissa > 0;
-            if (IsZero(b.Mantissa)) return a.Mantissa < 0;
-            if (a.Exponent == b.Exponent) return a.Mantissa < b.Mantissa;
-            if (a.Mantissa > 0) return b.Mantissa > 0 && a.Exponent < b.Exponent;
+
+            if (IsZero(a.Mantissa))
+                return b.Mantissa > 0;
+            if (IsZero(b.Mantissa))
+                return a.Mantissa < 0;
+            if (a.Exponent == b.Exponent)
+                return a.Mantissa < b.Mantissa;
+            if (a.Mantissa > 0)
+                return b.Mantissa > 0 && a.Exponent < b.Exponent;
             return b.Mantissa > 0 || a.Exponent > b.Exponent;
         }
 
         public static bool operator <=(BigDouble a, BigDouble b)
         {
             if (IsNaN(a) || IsNaN(b))
-            { 
+            {
                 return false;
             }
 
@@ -607,30 +627,30 @@ namespace LD.Numeric
         public static bool operator >(BigDouble a, BigDouble b)
         {
             if (IsNaN(a) || IsNaN(b))
-            { 
+            {
                 return false;
             }
 
             if (IsZero(a.Mantissa))
-            { 
+            {
                 return b.Mantissa < 0;
             }
 
             if (IsZero(b.Mantissa))
-            { 
+            {
                 return a.Mantissa > 0;
             }
 
             if (a.Exponent == b.Exponent)
-            { 
+            {
                 return a.Mantissa > b.Mantissa;
             }
 
             if (a.Mantissa > 0)
-            { 
+            {
                 return b.Mantissa < 0 || a.Exponent > b.Exponent;
             }
-             
+
             return b.Mantissa < 0 && a.Exponent < b.Exponent;
         }
 
@@ -701,8 +721,8 @@ namespace LD.Numeric
         public static BigDouble Pow10(double power)
         {
             return IsInteger(power)
-                ? Pow10((long) power)
-                : Normalize(Math.Pow(10, power % 1), (long) Math.Truncate(power));
+                ? Pow10((long)power)
+                : Normalize(Math.Pow(10, power % 1), (long)Math.Truncate(power));
         }
 
         public static BigDouble Pow10(long power)
@@ -727,7 +747,7 @@ namespace LD.Numeric
             {
                 // TODO: This is rather dumb, but works anyway
                 // Power is too big for our mantissa, so we do multiple Pow with smaller powers.
-                return Pow(Pow(value, 2), (double) power / 2);
+                return Pow(Pow(value, 2), (double)power / 2);
             }
 
             return Normalize(mantissa, value.Exponent * power);
@@ -763,7 +783,7 @@ namespace LD.Numeric
                 newMantissa = Math.Pow(value.Mantissa, other);
                 if (IsFinite(newMantissa))
                 {
-                    return Normalize(newMantissa, (long) temp);
+                    return Normalize(newMantissa, (long)temp);
                 }
             }
 
@@ -774,7 +794,7 @@ namespace LD.Numeric
             newMantissa = Math.Pow(10, other * Math.Log10(value.Mantissa) + residue);
             if (IsFinite(newMantissa))
             {
-                return Normalize(newMantissa, (long) newexponent);
+                return Normalize(newMantissa, (long)newexponent);
             }
 
             //UN-SAFETY: This should return NaN when mantissa is negative and value is noninteger.
@@ -793,7 +813,12 @@ namespace LD.Numeric
 
             var n = value.ToDouble() + 1;
 
-            return Pow(n / 2.71828182845904523536 * Math.Sqrt(n * Math.Sinh(1 / n) + 1 / (810 * Math.Pow(n, 6))), n) * Math.Sqrt(2 * 3.141592653589793238462 / n);
+            return Pow(
+                    n
+                        / 2.71828182845904523536
+                        * Math.Sqrt(n * Math.Sinh(1 / n) + 1 / (810 * Math.Pow(n, 6))),
+                    n
+                ) * Math.Sqrt(2 * 3.141592653589793238462 / n);
         }
 
         public static BigDouble Exp(BigDouble value)
@@ -811,10 +836,13 @@ namespace LD.Numeric
             if (value.Exponent % 2 != 0)
             {
                 // mod of a negative number is negative, so != means '1 or -1'
-                return Normalize(Math.Sqrt(value.Mantissa) * 3.16227766016838, (long) Math.Floor(value.Exponent / 2.0));
+                return Normalize(
+                    Math.Sqrt(value.Mantissa) * 3.16227766016838,
+                    (long)Math.Floor(value.Exponent / 2.0)
+                );
             }
 
-            return Normalize(Math.Sqrt(value.Mantissa), (long) Math.Floor(value.Exponent / 2.0));
+            return Normalize(Math.Sqrt(value.Mantissa), (long)Math.Floor(value.Exponent / 2.0));
         }
 
         public static BigDouble Cbrt(BigDouble value)
@@ -832,15 +860,21 @@ namespace LD.Numeric
             var mod = value.Exponent % 3;
             if (mod == 1 || mod == -1)
             {
-                return Normalize(newmantissa * 2.1544346900318837, (long) Math.Floor(value.Exponent / 3.0));
+                return Normalize(
+                    newmantissa * 2.1544346900318837,
+                    (long)Math.Floor(value.Exponent / 3.0)
+                );
             }
 
             if (mod != 0)
             {
-                return Normalize(newmantissa * 4.6415888336127789, (long) Math.Floor(value.Exponent / 3.0));
+                return Normalize(
+                    newmantissa * 4.6415888336127789,
+                    (long)Math.Floor(value.Exponent / 3.0)
+                );
             } //mod != 0 at this point means 'mod == 2 || mod == -2'
 
-            return Normalize(newmantissa, (long) Math.Floor(value.Exponent / 3.0));
+            return Normalize(newmantissa, (long)Math.Floor(value.Exponent / 3.0));
         }
 
         public static BigDouble Sinh(BigDouble value)
@@ -870,7 +904,8 @@ namespace LD.Numeric
 
         public static double Atanh(BigDouble value)
         {
-            if (Abs(value) >= 1) return double.NaN;
+            if (Abs(value) >= 1)
+                return double.NaN;
             return Ln((value + 1) / (One - value)) / 2;
         }
 
@@ -899,9 +934,14 @@ namespace LD.Numeric
         /// </summary>
         private static class BigNumber
         {
-            public static string FormatBigDouble(BigDouble value, string format, IFormatProvider formatProvider)
+            public static string FormatBigDouble(
+                BigDouble value,
+                string format,
+                IFormatProvider formatProvider
+            )
             {
-                if (IsNaN(value)) return "NaN";
+                if (IsNaN(value))
+                    return "NaN";
                 if (value.Exponent >= ExpLimit)
                 {
                     return value.Mantissa > 0 ? "Infinity" : "-Infinity";
@@ -924,7 +964,7 @@ namespace LD.Numeric
 
             private static char ParseFormatSpecifier(string format, out int digits)
             {
-                const char customFormat = (char) 0;
+                const char customFormat = (char)0;
                 digits = -1;
                 if (string.IsNullOrEmpty(format))
                 {
@@ -975,8 +1015,9 @@ namespace LD.Numeric
                 }
 
                 return value.Mantissa.ToString(format, CultureInfo.InvariantCulture)
-                       + "E" + (value.Exponent >= 0 ? "+" : "")
-                       + value.Exponent.ToString(CultureInfo.InvariantCulture);
+                    + "E"
+                    + (value.Exponent >= 0 ? "+" : "")
+                    + value.Exponent.ToString(CultureInfo.InvariantCulture);
             }
 
             private static string ToFixed(double value, int places)
@@ -993,15 +1034,16 @@ namespace LD.Numeric
 
                 var len = (places >= 0 ? places : MaxSignificantDigits) + 1;
                 var numDigits = (int)Math.Ceiling(Math.Log10(Math.Abs(value.Mantissa)));
-                var rounded = Math.Round(value.Mantissa * Math.Pow(10, len - numDigits)) * Math.Pow(10, numDigits - len);
+                var rounded =
+                    Math.Round(value.Mantissa * Math.Pow(10, len - numDigits))
+                    * Math.Pow(10, numDigits - len);
 
                 var mantissa = ToFixed(rounded, Math.Max(len - numDigits, 0));
                 if (mantissa != "0" && places < 0)
                 {
                     mantissa = mantissa.TrimEnd('0', '.');
                 }
-                return mantissa + "E" + (value.Exponent >= 0 ? "+" : "")
-                       + value.Exponent;
+                return mantissa + "E" + (value.Exponent >= 0 ? "+" : "") + value.Exponent;
             }
 
             private static string FormatFixed(BigDouble value, int places)
@@ -1022,10 +1064,10 @@ namespace LD.Numeric
                 if (value.Exponent >= MaxSignificantDigits)
                 {
                     // TODO: StringBuilder-optimizable
-                    return value.Mantissa
-                        .ToString(CultureInfo.InvariantCulture)
-                        .Replace(".", "")
-                        .PadRight((int)value.Exponent + 1, '0')
+                    return value
+                            .Mantissa.ToString(CultureInfo.InvariantCulture)
+                            .Replace(".", "")
+                            .PadRight((int)value.Exponent + 1, '0')
                         + (places > 0 ? ".".PadRight(places + 1, '0') : "");
                 }
                 return ToFixed(value.ToDouble(), places);
@@ -1048,7 +1090,10 @@ namespace LD.Numeric
                 var index = 0;
                 for (var i = 0; i < Powers.Length; i++)
                 {
-                    Powers[index++] = FastDouble.ParseDouble("1e" + (i - IndexOf0), FRACTIONAL_PART_ACCURITY);
+                    Powers[index++] = FastDouble.ParseDouble(
+                        "1e" + (i - IndexOf0),
+                        FRACTIONAL_PART_ACCURITY
+                    );
                 }
             }
 
@@ -1084,7 +1129,9 @@ namespace LD.Numeric
             }
 
             mantissa *= Math.Sign(Random.NextDouble() * 2 - 1);
-            var exponent = (long)(Math.Floor(Random.NextDouble() * absMaxExponent * 2) - absMaxExponent);
+            var exponent = (long)(
+                Math.Floor(Random.NextDouble() * absMaxExponent * 2) - absMaxExponent
+            );
             return BigDouble.Normalize(mantissa, exponent);
         }
 
@@ -1096,22 +1143,33 @@ namespace LD.Numeric
         /// Adapted from Trimps source code.
         /// </para>
         /// </summary>
-        public static BigDouble AffordGeometricSeries(BigDouble resourcesAvailable, BigDouble priceStart,
-            BigDouble priceRatio, BigDouble currentOwned)
+        public static BigDouble AffordGeometricSeries(
+            BigDouble resourcesAvailable,
+            BigDouble priceStart,
+            BigDouble priceRatio,
+            BigDouble currentOwned
+        )
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
             //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
 
-            return BigDouble.Floor(BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1) / BigDouble.Log10(priceRatio));
+            return BigDouble.Floor(
+                BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1)
+                    / BigDouble.Log10(priceRatio)
+            );
         }
 
         /// <summary>
         /// How much resource would it cost to buy (numItems) items if you already have currentOwned,
         /// the initial price is priceStart and it multiplies by priceRatio each purchase?
         /// </summary>
-        public static BigDouble SumGeometricSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceRatio,
-            BigDouble currentOwned)
+        public static BigDouble SumGeometricSeries(
+            BigDouble numItems,
+            BigDouble priceStart,
+            BigDouble priceRatio,
+            BigDouble currentOwned
+        )
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
@@ -1123,8 +1181,12 @@ namespace LD.Numeric
         /// additively increasing cost each purchase (start at priceStart, add by priceAdd,
         /// already own currentOwned), how much of it can you buy?
         /// </summary>
-        public static BigDouble AffordArithmeticSeries(BigDouble resourcesAvailable, BigDouble priceStart,
-            BigDouble priceAdd, BigDouble currentOwned)
+        public static BigDouble AffordArithmeticSeries(
+            BigDouble resourcesAvailable,
+            BigDouble priceStart,
+            BigDouble priceAdd,
+            BigDouble currentOwned
+        )
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
@@ -1147,8 +1209,12 @@ namespace LD.Numeric
         /// Adapted from http://www.mathwords.com/a/arithmetic_series.htm
         /// </para>
         /// </summary>
-        public static BigDouble SumArithmeticSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceAdd,
-            BigDouble currentOwned)
+        public static BigDouble SumArithmeticSeries(
+            BigDouble numItems,
+            BigDouble priceStart,
+            BigDouble priceAdd,
+            BigDouble currentOwned
+        )
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
@@ -1164,7 +1230,11 @@ namespace LD.Numeric
         /// From Frozen Cookies: http://cookieclicker.wikia.com/wiki/Frozen_Cookies_(JavaScript_Add-on)#Efficiency.3F_What.27s_that.3F
         /// </para>
         /// </summary>
-        public static BigDouble EfficiencyOfPurchase(BigDouble cost, BigDouble currentRpS, BigDouble deltaRpS)
+        public static BigDouble EfficiencyOfPurchase(
+            BigDouble cost,
+            BigDouble currentRpS,
+            BigDouble deltaRpS
+        )
         {
             return cost / currentRpS + cost / deltaRpS;
         }
@@ -1348,7 +1418,9 @@ namespace LD.Numeric
         /// </summary>
         public static BigDouble AscensionPenalty(this BigDouble value, double ascensions)
         {
-            return Math.Abs(ascensions) < double.Epsilon ? value : BigDouble.Pow(value, Math.Pow(10, -ascensions));
+            return Math.Abs(ascensions) < double.Epsilon
+                ? value
+                : BigDouble.Pow(value, Math.Pow(10, -ascensions));
         }
 
         /// <summary>

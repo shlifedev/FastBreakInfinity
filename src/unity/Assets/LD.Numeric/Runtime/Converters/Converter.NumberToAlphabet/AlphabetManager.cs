@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using System.Globalization;
 
-namespace LD.Numeric
+namespace LD.Numeric.IdleNumber
 {
     public static class AlphabetManager
     {
@@ -15,7 +14,8 @@ namespace LD.Numeric
         /// <returns></returns>
         public static long GetIndexFromUnit(string unit)
         {
-            if (string.IsNullOrEmpty(unit)) return 0;
+            if (string.IsNullOrEmpty(unit))
+                return 0;
             if (reverseUnitCache.ContainsKey(unit))
             {
                 return reverseUnitCache[unit];
@@ -32,15 +32,15 @@ namespace LD.Numeric
             return exponent;
         }
 
-
         /// <summary>
-        /// 알파벳을 반환합니다. 인덱스는 0 = A , 1 = B , 2 = C, 27 = AA 로 1마다 계산됩니다. 
+        /// 알파벳을 반환합니다. 인덱스는 0 = A , 1 = B , 2 = C, 27 = AA 로 1마다 계산됩니다.
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
         public static string GetAlphabetUnit(long index)
         {
-            if (index < 0) return string.Empty;
+            if (index < 0)
+                return string.Empty;
             if (unitCache.ContainsKey(index))
             {
                 return unitCache[index];
@@ -59,11 +59,10 @@ namespace LD.Numeric
             return unit;
         }
 
-
         public static string GetAlphabetUnit(int index) => GetAlphabetUnit(index);
 
         /// <summary>
-        /// -1~2 사이의 값을 입력시 빈 스트링이 반환됩니다. 
+        /// -1~2 사이의 값을 입력시 빈 스트링이 반환됩니다.
         ///  지수를 통해 알파벳 반환 3~5 = A, 6~8 = B, 9~11 = C . . .
         /// </summary>
         /// <param name="exponent"></param>

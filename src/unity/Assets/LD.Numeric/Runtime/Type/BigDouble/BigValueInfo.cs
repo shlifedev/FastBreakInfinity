@@ -1,12 +1,12 @@
-namespace LD.Numeric
-{ 
+namespace LD.Numeric.IdleNumber
+{
     public struct BigValueInfo
     {
         public double Mantissa { get; set; }
         public long Exponent { get; set; }
-         
-          public static BigValueInfo ExponentFormatToBigValueInfo(string input)
-        { 
+
+        public static BigValueInfo ExponentFormatToBigValueInfo(string input)
+        {
             double mantissa = 0;
             long exponent = 0;
             double decimalFactor = 1;
@@ -81,11 +81,7 @@ namespace LD.Numeric
                 exponent = -exponent;
             }
 
-            return new BigValueInfo()
-            {
-                Exponent = exponent,
-                Mantissa = mantissa
-            };
+            return new BigValueInfo() { Exponent = exponent, Mantissa = mantissa };
         }
     }
 }
