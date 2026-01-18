@@ -64,9 +64,9 @@ namespace LD.Numeric.IdleNumber
         /// <returns></returns>
         public double AdjustedMantissa()
         {
-            mantissa = Math.Round(mantissa, 6);
+            double roundedMantissa = Math.Round(mantissa, 6);
             double mul = Math.Pow(10, Exponent % 3);
-            return Mantissa * mul;
+            return roundedMantissa * mul;
         } 
     }
 }

@@ -2,39 +2,38 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-public class Tests
+/// <summary>
+/// 기존 테스트 (레거시)
+/// </summary>
+public class LegacyTests
 {
     [SetUp]
-    public void Setup()
-    {
-    }
-
+    public void Setup() { }
 
     [Test]
     public void FastDoubleDecimalAccur()
     {
-        var test = IdleNumber.FastDouble.ParseDouble("1.12345678123", 3); 
+        var test = IdleNumber.FastDouble.ParseDouble("1.12345678123", 3);
         Assert.IsTrue(test.ToString() == "1.123");
-        var test2 = IdleNumber.FastDouble.ParseDouble("1.123123123321321123", 9); 
+        var test2 = IdleNumber.FastDouble.ParseDouble("1.123123123321321123", 9);
         Assert.IsTrue(test2.ToString() == "1.123123123");
     }
+
     [Test]
     public void MultiplyTestGreaterThan()
     {
         BigDouble value1 = new BigDouble("1.1e5");
         BigDouble value2 = new BigDouble("1.1e5");
 
-        Console.WriteLine(value1.ToStringMantissaExponent()); 
-        Console.WriteLine(value2.ToStringMantissaExponent()); 
-        
-        
-        BigDouble result = value1 * value2; 
-        
+        Console.WriteLine(value1.ToStringMantissaExponent());
+        Console.WriteLine(value2.ToStringMantissaExponent());
+
+        BigDouble result = value1 * value2;
+
         Console.WriteLine(result.ToStringMantissaExponent());
-        Assert.IsTrue(result >= new BigDouble("1.21e10")); 
+        Assert.IsTrue(result >= new BigDouble("1.21e10"));
     }
-     
-   
+
     [Test]
     public void Alphabet()
     {
@@ -80,30 +79,31 @@ public class Tests
             }
         }
     }
-    
+
     [Test]
     public void Scenario1MustBeZero()
     {
         BigDouble itemPrice = new BigDouble("1.1e1001");
         BigDouble money = new BigDouble("1.1e1001");
-        if(money >= itemPrice) 
-            money -= itemPrice; 
+        if (money >= itemPrice)
+            money -= itemPrice;
         Assert.IsTrue(money == 0);
         Console.WriteLine(money.ToString());
     }
-    
+
     [Test]
     public void Scenario1MustBe9_9e1000()
     {
         BigDouble itemPrice = new BigDouble("1.1e1000");
         BigDouble money = new BigDouble("1.1e1001");
-        if(money >= itemPrice) 
-            money -= itemPrice; 
+        if (money >= itemPrice)
+            money -= itemPrice;
         Assert.IsTrue(money == new BigDouble("9.9e1000"));
         Console.WriteLine(money.ToStringMantissaExponent());
-    } 
+    }
+
     /// <summary>
-    /// 정확도 테스트 
+    /// 정확도 테스트
     /// </summary>
     [Test]
     public void DigitAaccuracy()
@@ -122,16 +122,16 @@ public class Tests
             BigDouble value = new BigDouble("1.10000e123");
             BigDouble value2 = new BigDouble("1.100000000001e123");
             Assert.That(value < value2);
-        } 
+        }
         {
             BigDouble value = new BigDouble("1.10000e123");
             BigDouble value2 = new BigDouble("1.100000000002e123");
             Assert.That(value < value2);
-        } 
+        }
         {
             BigDouble value = new BigDouble("1.10000e123");
             BigDouble value2 = new BigDouble("1.10000000001e123");
             Assert.That(value < value2);
-        }  
+        }
     }
 }

@@ -563,6 +563,7 @@ namespace LD.Numeric.IdleNumber
                 && !IsNaN(other)
                 && (
                     AreSameInfinity(this, other)
+                    || (IsZero(Mantissa) && IsZero(other.Mantissa))
                     || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa)
                 );
         }
@@ -607,6 +608,14 @@ namespace LD.Numeric.IdleNumber
                 return false;
             }
 
+            // Infinity 처리
+            if (IsNegativeInfinity(a))
+                return !IsNegativeInfinity(b); // -Inf < anything except -Inf
+            if (IsPositiveInfinity(b))
+                return !IsPositiveInfinity(a); // anything except +Inf < +Inf
+            if (IsPositiveInfinity(a) || IsNegativeInfinity(b))
+                return false; // +Inf is not < anything, nothing is < -Inf
+
             if (IsZero(a.Mantissa))
                 return b.Mantissa > 0;
             if (IsZero(b.Mantissa))
@@ -634,6 +643,14 @@ namespace LD.Numeric.IdleNumber
             {
                 return false;
             }
+
+            // Infinity 처리
+            if (IsPositiveInfinity(a))
+                return !IsPositiveInfinity(b); // +Inf > anything except +Inf
+            if (IsNegativeInfinity(b))
+                return !IsNegativeInfinity(a); // anything except -Inf > -Inf
+            if (IsNegativeInfinity(a) || IsPositiveInfinity(b))
+                return false; // -Inf is not > anything, nothing is > +Inf
 
             if (IsZero(a.Mantissa))
             {

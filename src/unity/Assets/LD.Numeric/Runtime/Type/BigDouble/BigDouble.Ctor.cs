@@ -26,8 +26,8 @@ namespace LD.Numeric.IdleNumber
                     break;
                 case eFormat.NumberWithExponent:
                     var split = BigValueInfo.ExponentFormatToBigValueInfo(value);
-                    this.exponent = split.Exponent;
-                    this.mantissa = split.Mantissa;
+                    // mantissa를 1~10 범위로 정규화
+                    this = Normalize(split.Mantissa, split.Exponent);
                     break;
                 default:
                     this.exponent = 0;
