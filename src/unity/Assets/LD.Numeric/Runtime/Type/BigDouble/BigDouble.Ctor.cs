@@ -1,16 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Numerics;
 
 namespace LD.Numeric.IdleNumber
 {
     public partial struct BigDouble
     {
-        /// <summary>
-        /// 스트링을 계속 생성하지 않고 재사용한다.
-        /// </summary>
-        private static Dictionary<int, string> CachedAlphabet = new Dictionary<int, string>();
-
         public enum eFormat
         {
             Number,

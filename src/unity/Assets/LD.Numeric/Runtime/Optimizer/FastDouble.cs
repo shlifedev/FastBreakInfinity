@@ -58,11 +58,10 @@ namespace LD.Numeric.IdleNumber
                 else if ((c == 'e' || c == 'E') && !hasExponent)
                 {
                     hasExponent = true;
+                    // 지수부 부호 처리 (+/-)
                     if (i + 1 < s.Length && (s[i + 1] == '-' || s[i + 1] == '+'))
                     {
-                        if (s[i + 1] == '-')
-                            negativeExponent = true;
-                        exponent = s[i + 1] == '-' ? -exponent : exponent;
+                        negativeExponent = s[i + 1] == '-';
                         i++;
                     }
                 }

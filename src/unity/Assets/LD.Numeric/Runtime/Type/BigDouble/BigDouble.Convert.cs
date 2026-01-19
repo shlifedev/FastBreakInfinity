@@ -1,6 +1,5 @@
 using System;
-using System.Text; 
- 
+
 namespace LD.Numeric.IdleNumber
 {
     public partial struct BigDouble
@@ -8,12 +7,12 @@ namespace LD.Numeric.IdleNumber
         /// <summary>
         /// BigDouble의 소수점 정확도
         /// </summary>
-        static int FRACTIONAL_PART_ACCURITY = 6;  
-        
+        private const int FractionalPartAccuracy = 6;
+
         /// <summary>
-        /// 몇 단위로 자를건지
+        /// 몇 단위로 자를건지 (1000 단위 = 3자리)
         /// </summary>
-        static int EXPONENT_UNIT = 3;
+        private const int ExponentUnit = 3;
 
         public static (long rangeA, long rangeB) GetExponentFromAlphabetUnit(string unit)
         {
@@ -30,7 +29,7 @@ namespace LD.Numeric.IdleNumber
                 exponent += letterValue * (int)Math.Pow(26, length - i - 1);
             }
 
-            return (exponent * 3, exponent * 3 + 2);
+            return (exponent * ExponentUnit, exponent * ExponentUnit + 2);
         }
 
         public static string GetAlphabetUnit(long exponent)
@@ -45,7 +44,7 @@ namespace LD.Numeric.IdleNumber
         public static long GetNumberFromUnitName(string unit)
         {
             var range = GetExponentFromAlphabetUnit(unit);
-            return range.rangeB / 3;
+            return range.rangeB / ExponentUnit;
         }
 
         /// <summary>
@@ -54,7 +53,7 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static long GetExponentFromUnitName(string unit)
         {
-            return GetNumberFromUnitName(unit) * EXPONENT_UNIT;
+            return GetNumberFromUnitName(unit) * ExponentUnit;
         }
 
         /// <summary>
@@ -64,8 +63,8 @@ namespace LD.Numeric.IdleNumber
         /// <returns></returns>
         public double AdjustedMantissa()
         {
-            double roundedMantissa = Math.Round(mantissa, 6);
-            double mul = Math.Pow(10, Exponent % 3);
+            double roundedMantissa = Math.Round(mantissa, FractionalPartAccuracy);
+            double mul = Math.Pow(10, Exponent % ExponentUnit);
             return roundedMantissa * mul;
         } 
     }

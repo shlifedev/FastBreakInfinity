@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using Cysharp.Text;
 using LD.Numeric.IdleNumber;
 using Random = System.Random;
@@ -12,16 +13,27 @@ namespace LD.Numeric.IdleNumber
     {
         public const double Tolerance = 1e-18;
 
-        //for example: if two exponents are more than 17 apart, consider adding them together pointless, just return the larger one
+        // 두 지수가 17 이상 차이나면 덧셈이 무의미하므로 큰 값을 반환
         private const int MaxSignificantDigits = 17;
 
         private const long ExpLimit = long.MaxValue;
 
-        //the largest exponent that can appear in a Double, though not all mantissas are valid here.
+        // Double에서 나타날 수 있는 최대 지수
         private const long DoubleExpMax = 308;
 
-        //The smallest exponent that can appear in a Double, though not all mantissas are valid here.
+        // Double에서 나타날 수 있는 최소 지수
         private const long DoubleExpMin = -324;
+
+        // 덧셈 정밀도 팩터 (정수 스케일링용)
+        private const double AdditionPrecisionFactor = 1e14;
+        private const int AdditionPrecisionExponent = 14;
+
+        // 수학 상수
+        private const double Ln10 = 2.30258509299404568402;         // Math.Log(10)
+        private const double Log2Of10 = 3.32192809488736234787;     // Math.Log2(10)
+        private const double Sqrt10 = 3.16227766016838;             // Math.Sqrt(10)
+        private const double CubeRoot10 = 2.1544346900318837;       // Math.Pow(10, 1.0/3)
+        private const double TwoThirdsPowerOf10 = 4.6415888336127789; // Math.Pow(10, 2.0/3)
 
         private double mantissa;
 
@@ -153,7 +165,7 @@ namespace LD.Numeric.IdleNumber
                 return NaN;
             }
 
-            var result = new BigDouble(FastDouble.ParseDouble(value, FRACTIONAL_PART_ACCURITY));
+            var result = new BigDouble(FastDouble.ParseDouble(value, FractionalPartAccuracy));
             if (IsNaN(result))
             {
                 throw new Exception("Invalid argument: " + value);
@@ -404,16 +416,15 @@ namespace LD.Numeric.IdleNumber
                 return bigger;
             }
 
-            //have to do this because adding numbers that were once integers but scaled down is imprecise.
-            //Example: 299 + 18
+            // 정수로 스케일업 후 연산하여 정밀도 유지 (예: 299 + 18)
             return Normalize(
                 Math.Round(
-                    1e14 * bigger.Mantissa
-                        + 1e14
+                    AdditionPrecisionFactor * bigger.Mantissa
+                        + AdditionPrecisionFactor
                             * smaller.Mantissa
                             * PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)
                 ),
-                bigger.Exponent - 14
+                bigger.Exponent - AdditionPrecisionExponent
             );
         }
 
@@ -725,18 +736,18 @@ namespace LD.Numeric.IdleNumber
                 return double.NaN;
             }
 
-            //UN-SAFETY: Most incremental game cases are log(number := 1 or greater, base := 2 or greater). We assume this to be true and thus only need to return a number, not a BigDouble, and don't do any other kind of error checking.
-            return 2.30258509299404568402 / Math.Log(@base) * Log10(value);
+            // 대부분의 증분 게임에서 log(number >= 1, base >= 2)이므로 간단히 처리
+            return Ln10 / Math.Log(@base) * Log10(value);
         }
 
         public static double Log2(BigDouble value)
         {
-            return 3.32192809488736234787 * Log10(value);
+            return Log2Of10 * Log10(value);
         }
 
         public static double Ln(BigDouble value)
         {
-            return 2.30258509299404568402 * Log10(value);
+            return Ln10 * Log10(value);
         }
 
         public static BigDouble Pow10(double power)
@@ -856,9 +867,9 @@ namespace LD.Numeric.IdleNumber
 
             if (value.Exponent % 2 != 0)
             {
-                // mod of a negative number is negative, so != means '1 or -1'
+                // 음수의 mod는 음수이므로 != 0은 '1 또는 -1'을 의미
                 return Normalize(
-                    Math.Sqrt(value.Mantissa) * 3.16227766016838,
+                    Math.Sqrt(value.Mantissa) * Sqrt10,
                     (long)Math.Floor(value.Exponent / 2.0)
                 );
             }
@@ -882,18 +893,19 @@ namespace LD.Numeric.IdleNumber
             if (mod == 1 || mod == -1)
             {
                 return Normalize(
-                    newmantissa * 2.1544346900318837,
+                    newmantissa * CubeRoot10,
                     (long)Math.Floor(value.Exponent / 3.0)
                 );
             }
 
             if (mod != 0)
             {
+                // mod != 0 여기서는 'mod == 2 || mod == -2'를 의미
                 return Normalize(
-                    newmantissa * 4.6415888336127789,
+                    newmantissa * TwoThirdsPowerOf10,
                     (long)Math.Floor(value.Exponent / 3.0)
                 );
-            } //mod != 0 at this point means 'mod == 2 || mod == -2'
+            }
 
             return Normalize(newmantissa, (long)Math.Floor(value.Exponent / 3.0));
         }
@@ -1113,7 +1125,7 @@ namespace LD.Numeric.IdleNumber
                 {
                     Powers[index++] = FastDouble.ParseDouble(
                         "1e" + (i - IndexOf0),
-                        FRACTIONAL_PART_ACCURITY
+                        FractionalPartAccuracy
                     );
                 }
             }
@@ -1129,7 +1141,10 @@ namespace LD.Numeric.IdleNumber
 
     public static class BigMath
     {
-        private static readonly Random Random = new Random();
+        // ThreadLocal로 스레드 안전성 확보
+        private static readonly ThreadLocal<Random> ThreadLocalRandom =
+            new ThreadLocal<Random>(() => new Random());
+        private static Random Random => ThreadLocalRandom.Value;
 
         /// <summary>
         /// This doesn't follow any kind of sane random distribution, so use this for testing purposes only.

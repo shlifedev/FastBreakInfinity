@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>LD.Numeric.Benchmark.BigDoubleBenchmarks-20260119-001810</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.14.0, macOS 26.2 (25C56) [Darwin 25.2.0]
+Apple M1 Pro, 1 CPU, 10 logical and 10 physical cores
+.NET SDK 10.0.102
+  [Host]     : .NET 10.0.2 (10.0.226.5608), Arm64 RyuJIT AdvSIMD
+  DefaultJob : .NET 10.0.2 (10.0.226.5608), Arm64 RyuJIT AdvSIMD
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method                    </th><th>Mean </th><th>Error</th><th>StdDev</th><th>Gen0</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>Arithmetic_Add_SameExponent</td><td>7.1741 ns</td><td>0.0673 ns</td><td>0.0597 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Arithmetic_Add_DifferentExponent</td><td>2.0793 ns</td><td>0.0332 ns</td><td>0.0295 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Arithmetic_Subtract</td><td>2.0662 ns</td><td>0.0177 ns</td><td>0.0165 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Arithmetic_Multiply</td><td>4.9368 ns</td><td>0.0451 ns</td><td>0.0377 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Arithmetic_Divide</td><td>16.6339 ns</td><td>0.0541 ns</td><td>0.0506 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Arithmetic_Reciprocate</td><td>5.0079 ns</td><td>0.0725 ns</td><td>0.0679 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Comparison_Equals</td><td>0.9441 ns</td><td>0.0069 ns</td><td>0.0057 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Comparison_LessThan</td><td>1.9839 ns</td><td>0.0072 ns</td><td>0.0067 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Comparison_GreaterThan</td><td>2.0157 ns</td><td>0.0228 ns</td><td>0.0178 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Comparison_CompareTo</td><td>1.6818 ns</td><td>0.0079 ns</td><td>0.0074 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Comparison_Max</td><td>2.0863 ns</td><td>0.0253 ns</td><td>0.0236 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Comparison_Min</td><td>2.0942 ns</td><td>0.0196 ns</td><td>0.0183 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Constructor_FromDouble</td><td>6.1951 ns</td><td>0.0404 ns</td><td>0.0358 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Constructor_FromString</td><td>9.0920 ns</td><td>0.0549 ns</td><td>0.0429 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Constructor_FromMantissaExponent</td><td>0.5058 ns</td><td>0.0041 ns</td><td>0.0038 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Conversion_ToString_Small</td><td>110.1663 ns</td><td>0.9912 ns</td><td>0.8277 ns</td><td>0.0050</td><td>32 B</td>
+</tr><tr><td>Conversion_ToString_Large</td><td>68.9228 ns</td><td>0.7256 ns</td><td>0.6059 ns</td><td>0.0114</td><td>72 B</td>
+</tr><tr><td>Conversion_ToString_VeryLarge</td><td>68.6502 ns</td><td>0.6224 ns</td><td>0.5822 ns</td><td>0.0114</td><td>72 B</td>
+</tr><tr><td>Conversion_ToDouble</td><td>1.5124 ns</td><td>0.0054 ns</td><td>0.0042 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Conversion_AdjustedMantissa</td><td>8.8734 ns</td><td>0.0269 ns</td><td>0.0225 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Conversion_GetAlphabetUnit</td><td>2.9914 ns</td><td>0.0277 ns</td><td>0.0259 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Conversion_GetAlphabetUnit_Large</td><td>3.0035 ns</td><td>0.0139 ns</td><td>0.0130 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Pow_SmallExponent</td><td>8.6956 ns</td><td>0.0235 ns</td><td>0.0220 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Pow_LargeExponent</td><td>17.8841 ns</td><td>0.0485 ns</td><td>0.0454 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Pow_DoubleExponent</td><td>23.2980 ns</td><td>0.0940 ns</td><td>0.0833 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Pow10_Integer</td><td>0.0000 ns</td><td>0.0000 ns</td><td>0.0000 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Pow10_Double</td><td>0.1790 ns</td><td>0.0017 ns</td><td>0.0015 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Log10</td><td>2.7311 ns</td><td>0.0033 ns</td><td>0.0031 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Log_Base2</td><td>2.7577 ns</td><td>0.0053 ns</td><td>0.0044 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Log2</td><td>2.7500 ns</td><td>0.0047 ns</td><td>0.0044 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Ln</td><td>2.8443 ns</td><td>0.0034 ns</td><td>0.0032 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Sqrt</td><td>2.0749 ns</td><td>0.0134 ns</td><td>0.0118 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Cbrt</td><td>10.2161 ns</td><td>0.0233 ns</td><td>0.0218 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Exp</td><td>44.5171 ns</td><td>0.1006 ns</td><td>0.0892 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Factorial</td><td>117.9719 ns</td><td>0.2917 ns</td><td>0.2729 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Math_Abs</td><td>0.0000 ns</td><td>0.0000 ns</td><td>0.0000 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Rounding_Round</td><td>9.0474 ns</td><td>0.0259 ns</td><td>0.0243 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Rounding_Floor</td><td>9.3469 ns</td><td>0.0271 ns</td><td>0.0254 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Rounding_Ceiling</td><td>9.5096 ns</td><td>0.0357 ns</td><td>0.0334 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Rounding_Truncate</td><td>9.0451 ns</td><td>0.0367 ns</td><td>0.0343 ns</td><td>-</td><td>-</td>
+</tr></tbody></table>
+</body>
+</html>

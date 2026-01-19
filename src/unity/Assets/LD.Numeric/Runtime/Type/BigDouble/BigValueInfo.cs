@@ -40,7 +40,13 @@ namespace LD.Numeric.IdleNumber
 
                     if (c == '+')
                     {
-                        continue;  
+                        continue;
+                    }
+
+                    // 숫자 문자 검증 (0-9 범위만 허용)
+                    if (c < '0' || c > '9')
+                    {
+                        continue;
                     }
 
                     int digit = c - '0';
@@ -64,7 +70,13 @@ namespace LD.Numeric.IdleNumber
 
                     if (c == '+')
                     {
-                        continue;  
+                        continue;
+                    }
+
+                    // 숫자 문자 검증 (0-9 범위만 허용)
+                    if (c < '0' || c > '9')
+                    {
+                        continue;
                     }
 
                     exponent = exponent * 10 + (c - '0');

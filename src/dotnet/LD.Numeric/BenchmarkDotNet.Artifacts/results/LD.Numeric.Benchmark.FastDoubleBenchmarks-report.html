@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>LD.Numeric.Benchmark.FastDoubleBenchmarks-20260119-003337</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.14.0, macOS 26.2 (25C56) [Darwin 25.2.0]
+Apple M1 Pro, 1 CPU, 10 logical and 10 physical cores
+.NET SDK 10.0.102
+  [Host]     : .NET 10.0.2 (10.0.226.5608), Arm64 RyuJIT AdvSIMD
+  DefaultJob : .NET 10.0.2 (10.0.226.5608), Arm64 RyuJIT AdvSIMD
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method                  </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Gen0</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>Parse_DoubleParse_Simple</td><td>26.488 ns</td><td>0.1054 ns</td><td>0.0986 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Simple</td><td>5.620 ns</td><td>0.0188 ns</td><td>0.0176 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_DoubleParse_Decimal</td><td>40.188 ns</td><td>0.1752 ns</td><td>0.1639 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Decimal</td><td>21.633 ns</td><td>0.0893 ns</td><td>0.0836 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_DoubleParse_Scientific</td><td>33.838 ns</td><td>0.0935 ns</td><td>0.0874 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Scientific</td><td>22.306 ns</td><td>0.0983 ns</td><td>0.0919 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_DoubleParse_Negative</td><td>32.210 ns</td><td>0.1337 ns</td><td>0.1251 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Negative</td><td>15.863 ns</td><td>0.0809 ns</td><td>0.0756 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Precision3</td><td>16.366 ns</td><td>0.0837 ns</td><td>0.0783 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Precision6</td><td>21.613 ns</td><td>0.0838 ns</td><td>0.0784 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Parse_FastDouble_Precision10</td><td>21.654 ns</td><td>0.0813 ns</td><td>0.0761 ns</td><td>-</td><td>-</td>
+</tr><tr><td>ToString_DoubleToString_Small</td><td>87.772 ns</td><td>0.3940 ns</td><td>0.3686 ns</td><td>0.0063</td><td>40 B</td>
+</tr><tr><td>ToString_FastDouble_Small</td><td>29.231 ns</td><td>0.1537 ns</td><td>0.1437 ns</td><td>0.0063</td><td>40 B</td>
+</tr><tr><td>ToString_DoubleToString_Medium</td><td>121.225 ns</td><td>0.6601 ns</td><td>0.6175 ns</td><td>0.0062</td><td>40 B</td>
+</tr><tr><td>ToString_FastDouble_Medium</td><td>33.975 ns</td><td>0.1960 ns</td><td>0.1833 ns</td><td>0.0063</td><td>40 B</td>
+</tr><tr><td>ToString_DoubleToString_Large</td><td>129.626 ns</td><td>0.5709 ns</td><td>0.5340 ns</td><td>0.0076</td><td>48 B</td>
+</tr><tr><td>ToString_FastDouble_Large</td><td>35.739 ns</td><td>0.2830 ns</td><td>0.2363 ns</td><td>0.0076</td><td>48 B</td>
+</tr></tbody></table>
+</body>
+</html>
