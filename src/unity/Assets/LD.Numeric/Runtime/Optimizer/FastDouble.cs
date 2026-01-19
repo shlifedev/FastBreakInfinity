@@ -5,6 +5,22 @@ namespace LD.Numeric.IdleNumber
 {
     public static class FastDouble
     {
+        private static readonly double[] PositivePowersOf10 =
+        {
+            1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
+            1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
+            1e20, 1e21, 1e22
+        };
+
+        private static double Pow10(int exp)
+        {
+            if (exp >= 0 && exp < PositivePowersOf10.Length)
+                return PositivePowersOf10[exp];
+            if (exp < 0 && -exp < PositivePowersOf10.Length)
+                return 1.0 / PositivePowersOf10[-exp];
+            return Math.Pow(10.0, exp);
+        }
+
         /// <summary>
         /// 스트링을 더블로 변환함
         /// </summary>
@@ -73,12 +89,12 @@ namespace LD.Numeric.IdleNumber
 
             if (hasDecimal)
             {
-                mantissa /= Math.Pow(10.0, decimalPlaces);
+                mantissa /= Pow10(decimalPlaces);
             }
 
             if (hasExponent)
             {
-                mantissa *= Math.Pow(10.0, negativeExponent ? -exponent : exponent);
+                mantissa *= Pow10(negativeExponent ? -exponent : exponent);
             }
             return isNegative ? -mantissa : mantissa;
         }
@@ -119,18 +135,8 @@ namespace LD.Numeric.IdleNumber
             double fractionalPart = value - integerPart;
             pos += IntegerToString(integerPart, buffer.Slice(pos));
             buffer[pos++] = '.';
-            fractionalPart = Math.Round(
-                fractionalPart * Math.Pow(10, decimalPlaces),
-                decimalPlaces
-            );
-            try
-            {
-                pos += IntegerToString((long)fractionalPart, buffer.Slice(pos), decimalPlaces);
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
+            fractionalPart = Math.Round(fractionalPart * Pow10(decimalPlaces), decimalPlaces);
+            pos += IntegerToString((long)fractionalPart, buffer.Slice(pos), decimalPlaces);
             return buffer.Slice(0, pos).ToString();
         }
 
