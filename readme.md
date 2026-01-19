@@ -1,42 +1,46 @@
 # Fast Idle Number
 
 <p align="center">
-<a href="/readme_ko.md">  한국어  </a> 
+<a href="/readme_ko.md">  한국어  </a>
 <a href="/readme.md">  English  </a>
 </p>
 
-It is an extended fork of [BreakInfinity] (https://github.com/Razenpok/BreakInfinity.cs).
+An extended fork of [BreakInfinity.cs](https://github.com/Razenpok/BreakInfinity.cs).
 
-- In an environment where decimal accuracy is not required, the CPU time has been significantly reduced by efficiently calculating the number of digits of double.
-- In addition, an efficient alphabetic conversion process for the number of digits has been added.
+- Significantly reduces CPU time by efficiently calculating double digit counts in environments where decimal precision is not required.
+- Includes an efficient alphabetic conversion process for digit counts.
 
 ## Why Fast?
-The functions see in the picture were called 1000 times in one frame
+
+The functions shown in the picture were called 1,000 times per frame.
 
 <img width="820" alt="image" src="https://github.com/shlifedev/FastBigDouble/assets/49047211/3623a23a-961d-435a-a555-e6f618d227a3">
 
-While **double.Parse** and **double.ToString** are great for their versatility, they are very slow in special situations.
+While **double.Parse** and **double.ToString** are versatile, they are very slow in specialized scenarios.
 
-In games that use large numbers, such as idle games, you don't need to care as much about the accuracy of floating-point numbers, so it's a performance advantage to create your own algorithm to parse double.
+In games that use large numbers, such as idle games, floating-point precision is less critical. Creating a custom algorithm to parse doubles provides a significant performance advantage.
 
-And Unless it's a case like ToString, which requires a string to be created anew, it will behave as **memory efficient** code with near **zero GC**
+Unless you need to create new strings like with ToString, the code is **memory efficient** with near **zero GC**.
 
+## Important Notice
+
+Since `FastDouble.cs` only handles precision up to 6 decimal places, make sure to truncate any values beyond 6 decimal places when sending data to the server or performing similar operations.
+
+ex ) 1.123456789e10 => 1.123456e10
 
 --------
 
+## How to Use
 
-## How to Use?
-It is exactly the same as BigInfinity.cs, but it must follow these rules
+The usage is identical to BigInfinity.cs, but you must follow these rules:
 
-Simple.
 ```cs
 BigDouble _ = new BigDouble("1000000000000000000000"); // Number Constructor
-BigDouble _ = new BigDouble("9.999e100"); // Exponent Constructor. It's Very Fast!!!!
+BigDouble _ = new BigDouble("9.999e100"); // Exponent Constructor - Very Fast!
 new BigDouble(1e3).ToString() // Result = "1.0A"
 ```
 
-
 -----
 
-Many optimisations have been made.
-If you want to minimise CPU time and memory usage in an environment where you need to use big doubles frequently, try this library.
+Many optimizations have been made.
+If you want to minimize CPU time and memory usage in an environment where you frequently use big doubles, try this library.
