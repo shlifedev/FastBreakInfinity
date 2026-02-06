@@ -64,7 +64,8 @@ namespace LD.Numeric.IdleNumber
         public double AdjustedMantissa()
         {
             double roundedMantissa = Math.Round(mantissa, FractionalPartAccuracy);
-            double mul = Math.Pow(10, Exponent % ExponentUnit);
+            long mod = ((Exponent % ExponentUnit) + ExponentUnit) % ExponentUnit;
+            double mul = Math.Pow(10, mod);
             return roundedMantissa * mul;
         } 
     }

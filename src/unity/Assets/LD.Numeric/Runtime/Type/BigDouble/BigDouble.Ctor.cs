@@ -31,7 +31,7 @@ namespace LD.Numeric.IdleNumber
 
         public BigDouble(string value)
         {
-            if (value.IndexOf('e') != -1)
+            if (value.IndexOf('e') != -1 || value.IndexOf('E') != -1)
             {
                 this = new BigDouble(value, eFormat.NumberWithExponent);
             }

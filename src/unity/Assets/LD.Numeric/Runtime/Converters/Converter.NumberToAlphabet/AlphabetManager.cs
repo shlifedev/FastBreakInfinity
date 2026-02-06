@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace LD.Numeric.IdleNumber
 {
     public static class AlphabetManager
     {
-        static Dictionary<long, string> unitCache = new Dictionary<long, string>();
-        static Dictionary<string, long> reverseUnitCache = new Dictionary<string, long>();
+        static ConcurrentDictionary<long, string> unitCache = new ConcurrentDictionary<long, string>();
+        static ConcurrentDictionary<string, long> reverseUnitCache = new ConcurrentDictionary<string, long>();
 
 #if UNITY_EDITOR
 [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -17,42 +17,42 @@ namespace LD.Numeric.IdleNumber
         }
         
         /// <summary>
-        /// Exponent 인덱스를 가져 옴 = A = 0, B = 1, C = 2
+        /// 알파벳 단위를 0-indexed 인덱스로 변환 (A=0, B=1, ..., Z=25, AA=26)
+        /// GetAlphabetUnit의 역함수.
         /// </summary>
-        /// <param name="unit"></param>
-        /// <returns></returns>
         public static long GetIndexFromUnit(string unit)
         {
             if (string.IsNullOrEmpty(unit))
                 return 0;
-            if (reverseUnitCache.ContainsKey(unit))
+            if (reverseUnitCache.TryGetValue(unit, out var cached))
             {
-                return reverseUnitCache[unit];
+                return cached;
             }
 
-            int exponent = 0;
+            long index = 0;
             foreach (char c in unit)
             {
-                exponent = exponent * 26 + (c - 'A' + 1);
+                index = index * 26 + (c - 'A' + 1);
             }
 
-            reverseUnitCache[unit] = exponent;
+            // 1-indexed → 0-indexed 변환 (A=1→0, B=2→1, AA=27→26)
+            index -= 1;
 
-            return exponent;
+            reverseUnitCache[unit] = index;
+
+            return index;
         }
 
         /// <summary>
-        /// 알파벳을 반환합니다. 인덱스는 0 = A , 1 = B , 2 = C, 27 = AA 로 1마다 계산됩니다.
+        /// 알파벳을 반환합니다. 인덱스는 0 = A , 1 = B , 2 = C, 26 = AA 로 1마다 계산됩니다.
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
         public static string GetAlphabetUnit(long index)
         {
             if (index < 0)
                 return string.Empty;
-            if (unitCache.ContainsKey(index))
+            if (unitCache.TryGetValue(index, out var cached))
             {
-                return unitCache[index];
+                return cached;
             }
 
             string unit = "";
@@ -68,7 +68,7 @@ namespace LD.Numeric.IdleNumber
             return unit;
         }
 
-        public static string GetAlphabetUnit(int index) => GetAlphabetUnit(index);
+        public static string GetAlphabetUnit(int index) => GetAlphabetUnit((long)index);
 
         /// <summary>
         /// -1~2 사이의 값을 입력시 빈 스트링이 반환됩니다.

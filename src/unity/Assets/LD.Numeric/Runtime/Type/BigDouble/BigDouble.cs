@@ -85,7 +85,13 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Normalize(double mantissa, long exponent)
         {
-            if (mantissa >= 1 && mantissa < 10 || !IsFinite(mantissa))
+            if (!IsFinite(mantissa))
+            {
+                if (double.IsNaN(mantissa))
+                    return NaN;
+                return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
+            }
+            if (mantissa >= 1 && mantissa < 10)
             {
                 return FromMantissaExponentNoNormalize(mantissa, exponent);
             }
@@ -116,18 +122,18 @@ namespace LD.Numeric.IdleNumber
             return new BigDouble(mantissa, exponent, new PrivateConstructorArg());
         }
 
-        public static BigDouble Zero = FromMantissaExponentNoNormalize(0, 0);
+        public static readonly BigDouble Zero = FromMantissaExponentNoNormalize(0, 0);
 
-        public static BigDouble One = FromMantissaExponentNoNormalize(1, 0);
+        public static readonly BigDouble One = FromMantissaExponentNoNormalize(1, 0);
 
-        public static BigDouble NaN = FromMantissaExponentNoNormalize(double.NaN, long.MinValue);
+        public static readonly BigDouble NaN = FromMantissaExponentNoNormalize(double.NaN, long.MinValue);
 
         public static bool IsNaN(BigDouble value)
         {
             return double.IsNaN(value.Mantissa);
         }
 
-        public static BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(
+        public static readonly BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(
             double.PositiveInfinity,
             0
         );
@@ -137,7 +143,7 @@ namespace LD.Numeric.IdleNumber
             return double.IsPositiveInfinity(value.Mantissa);
         }
 
-        public static BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(
+        public static readonly BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(
             double.NegativeInfinity,
             0
         );
@@ -154,7 +160,7 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Parse(string value)
         {
-            if (value.IndexOf('e') != -1)
+            if (value.IndexOf('e') != -1 || value.IndexOf('E') != -1)
             {
                 var info = BigValueInfo.ExponentFormatToBigValueInfo(value);
                 return Normalize(info.Mantissa, info.Exponent);
@@ -436,7 +442,24 @@ namespace LD.Numeric.IdleNumber
         public static BigDouble Multiply(BigDouble left, BigDouble right)
         {
             // 2e3 * 4e5 = (2 * 4)e(3 + 5)
-            return Normalize(left.Mantissa * right.Mantissa, left.Exponent + right.Exponent);
+            // Exponent 오버플로우 방어
+            long newExponent;
+            try
+            {
+                newExponent = checked(left.Exponent + right.Exponent);
+            }
+            catch (OverflowException)
+            {
+                // 오버플로우 시: 부호에 따라 Infinity 또는 Zero 반환
+                bool positiveResult = (left.Mantissa > 0) == (right.Mantissa > 0);
+                if ((left.Exponent > 0 && right.Exponent > 0)
+                    || (left.Exponent > 0 && right.Exponent >= 0)
+                    || (left.Exponent >= 0 && right.Exponent > 0))
+                    return positiveResult ? PositiveInfinity : NegativeInfinity;
+                return Zero;
+            }
+
+            return Normalize(left.Mantissa * right.Mantissa, newExponent);
         }
 
         public static BigDouble Divide(BigDouble left, BigDouble right)
@@ -782,7 +805,23 @@ namespace LD.Numeric.IdleNumber
                 return Pow(Pow(value, 2), (double)power / 2);
             }
 
-            return Normalize(mantissa, value.Exponent * power);
+            // Exponent 오버플로우 방어
+            long newExponent;
+            try
+            {
+                newExponent = checked(value.Exponent * power);
+            }
+            catch (OverflowException)
+            {
+                bool positiveResult = mantissa > 0;
+                bool exponentPositive = (value.Exponent > 0 && power > 0)
+                    || (value.Exponent < 0 && power < 0);
+                if (exponentPositive)
+                    return positiveResult ? PositiveInfinity : NegativeInfinity;
+                return Zero;
+            }
+
+            return Normalize(mantissa, newExponent);
         }
 
         public static BigDouble Pow(BigDouble value, double power)
@@ -1132,7 +1171,13 @@ namespace LD.Numeric.IdleNumber
 
             public static double Lookup(long power)
             {
-                return Powers[IndexOf0 + power];
+                var index = IndexOf0 + power;
+                if (index < 0 || index >= Powers.Length)
+                {
+                    return Math.Pow(10, power);
+                }
+
+                return Powers[index];
             }
         }
 

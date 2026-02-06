@@ -61,10 +61,10 @@ namespace LD.Numeric.IdleNumber
                         if (hasDecimal)
                             decimalPlaces++;
                     }
-                    else if (decimalPlaces == maxDecimalPlaces)
+                    else if (decimalPlaces >= maxDecimalPlaces)
                     {
-                        //소수점 이후에 지수부가 나올 예정이기 때문에 break해도 됨~~
-                        break;
+                        // maxDecimalPlaces 초과 숫자는 무시하되 루프는 계속 (지수부 파싱 필요)
+                        continue;
                     }
                 }
                 else if (c == '.' && !hasDecimal && !hasExponent)
@@ -101,7 +101,6 @@ namespace LD.Numeric.IdleNumber
 
         public static string OptimizeToString(this double value, int decimalPlaces)
         {
-            value = Math.Round(value, 3);
             if (decimalPlaces == 0)
                 return value.ToString("0");
             if (decimalPlaces < 0)

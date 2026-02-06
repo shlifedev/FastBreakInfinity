@@ -45,7 +45,8 @@ namespace LD.Numeric.IdleNumber
             string numberPart = str.Substring(0, lastAlphaIndex + 1);
             string unitPart = str.Substring(lastAlphaIndex + 1);
             double number = double.Parse(numberPart, CultureInfo.InvariantCulture);
-            long exponent = AlphabetManager.GetIndexFromUnit(unitPart) * 3;
+            // GetIndexFromUnit은 0-indexed (A=0, B=1, ...) 이므로 +1하여 exponent 계산
+            long exponent = (AlphabetManager.GetIndexFromUnit(unitPart) + 1) * 3;
             return number * Math.Pow(10, exponent);
         }
 
