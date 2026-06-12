@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using Cysharp.Text;
 
 namespace LD.Numeric.IdleNumber
 {
@@ -43,11 +42,15 @@ namespace LD.Numeric.IdleNumber
         }
 
         /// <summary>
-        /// 스트링을 더블로 변환함
+        /// 스트링을 더블로 변환함. null/빈 문자열은 0을 반환하고,
+        /// 그 외에 숫자가 하나도 없는 입력("-", ".", "1e" 등)은 FormatException을 던진다.
         /// </summary>
-        /// <param name="s">스트링</param>
-        /// <param name="maxDecimalPlaces">최대 소수점. 정확도의 개념임.</param>
-        /// <returns></returns>
+        /// <param name="s">스트링 (invariant 표기만 허용, 공백·천 단위 구분자 불가)</param>
+        /// <param name="maxDecimalPlaces">
+        /// 초과하는 소수 자릿수는 반올림 없이 절삭된다. 정확도를 버리고 속도를 얻는 손잡이.
+        /// 지수 표기(e/E) 입력에는 적용되지 않음 — 리터럴 자릿수 기준 절삭이라 지수 스케일링을
+        /// 거치면 정수부 유효숫자까지 깎이기 때문에 전체 정밀도로 파싱한다.
+        /// </param>
         /// <exception cref="FormatException"></exception>
         public static double ParseDouble(string s, int maxDecimalPlaces = 6)
         {
@@ -55,8 +58,24 @@ namespace LD.Numeric.IdleNumber
             {
                 return 0;
             }
+            return ParseDouble(s.AsSpan(), maxDecimalPlaces);
+        }
+
+        /// <summary>
+        /// substring 할당 없이 파싱할 수 있는 오버로드.
+        /// 동작은 <see cref="ParseDouble(string, int)"/>와 동일하다.
+        /// </summary>
+        public static double ParseDouble(ReadOnlySpan<char> s, int maxDecimalPlaces = 6)
+        {
+            if (s.IsEmpty)
+            {
+                return 0;
+            }
             if (maxDecimalPlaces < 0)
                 maxDecimalPlaces = 0;
+            if (s.IndexOfAny('e', 'E') >= 0)
+                maxDecimalPlaces = int.MaxValue;
+
             bool isNegative = s[0] == '-';
             int startIndex = isNegative || s[0] == '+' ? 1 : 0;
 
@@ -65,6 +84,8 @@ namespace LD.Numeric.IdleNumber
             bool negativeExponent = false;
             bool hasExponent = false;
             bool hasDecimal = false;
+            bool hasMantissaDigits = false;
+            bool hasExponentDigits = false;
             int decimalPlaces = 0;
 
             for (int i = startIndex; i < s.Length; i++)
@@ -74,20 +95,21 @@ namespace LD.Numeric.IdleNumber
                 {
                     if (hasExponent)
                     {
+                        hasExponentDigits = true;
                         // int 오버플로 랩어라운드 방지 — 이 크기면 결과는 어차피 0 또는 Infinity
                         if (exponent < 100_000_000)
                             exponent = exponent * 10 + (c - '0');
                     }
-                    else if (decimalPlaces < maxDecimalPlaces || !hasDecimal)
+                    else
                     {
-                        mantissa = mantissa * 10.0 + (c - '0');
-                        if (hasDecimal)
-                            decimalPlaces++;
-                    }
-                    else if (decimalPlaces >= maxDecimalPlaces)
-                    {
-                        // maxDecimalPlaces 초과 숫자는 무시하되 루프는 계속 (지수부 파싱 필요)
-                        continue;
+                        hasMantissaDigits = true;
+                        if (!hasDecimal || decimalPlaces < maxDecimalPlaces)
+                        {
+                            mantissa = mantissa * 10.0 + (c - '0');
+                            if (hasDecimal)
+                                decimalPlaces++;
+                        }
+                        // maxDecimalPlaces 초과 소수 자릿수는 절삭
                     }
                 }
                 else if (c == '.' && !hasDecimal && !hasExponent)
@@ -106,26 +128,32 @@ namespace LD.Numeric.IdleNumber
                 }
                 else
                 {
-                    throw new FormatException("입력값이 잘못 됨 => " + s);
+                    throw new FormatException("입력값이 잘못 됨 => " + s.ToString());
                 }
             }
 
-            if (hasDecimal)
+            // "-", ".", "1e" 같은 입력이 조용히 0/1로 로드되는 것을 막는다
+            if (!hasMantissaDigits || (hasExponent && !hasExponentDigits))
             {
-                mantissa /= Pow10(decimalPlaces);
+                throw new FormatException("입력값이 잘못 됨 => " + s.ToString());
             }
 
-            if (hasExponent)
+            // 소수부 보정과 지수를 합쳐 곱셈/나눗셈 한 번으로 처리 — 이중 반올림 방지
+            int netExponent =
+                (hasExponent ? (negativeExponent ? -exponent : exponent) : 0) - decimalPlaces;
+            if (netExponent > 0)
             {
-                mantissa *= Pow10(negativeExponent ? -exponent : exponent);
+                mantissa *= Pow10(netExponent);
+            }
+            else if (netExponent < 0)
+            {
+                mantissa /= Pow10(-netExponent);
             }
             return isNegative ? -mantissa : mantissa;
         }
 
         public static string OptimizeToString(this double value, int decimalPlaces)
         {
-            if (decimalPlaces == 0)
-                return value.ToString("0");
             if (decimalPlaces < 0)
                 throw new ArgumentOutOfRangeException(
                     nameof(decimalPlaces),
@@ -136,15 +164,6 @@ namespace LD.Numeric.IdleNumber
                 return "NaN";
             if (double.IsInfinity(value))
                 return value > 0 ? "Infinity" : "-Infinity";
-            if (value == 0)
-            {
-                using (var sb = ZString.CreateStringBuilder())
-                {
-                    sb.Append("0.");
-                    sb.Append('0', decimalPlaces);
-                    return sb.ToString();
-                }
-            }
             // long 캐스팅 범위를 벗어나는 값은 표준 포맷터로 처리
             if (Math.Abs(value) >= 9.2e18 || decimalPlaces > 17)
             {
@@ -159,9 +178,17 @@ namespace LD.Numeric.IdleNumber
                 value = -value;
             }
 
+            if (decimalPlaces == 0)
+            {
+                long rounded = (long)Math.Round(value, MidpointRounding.AwayFromZero);
+                pos += IntegerToString(rounded, buffer.Slice(pos));
+                return buffer.Slice(0, pos).ToString();
+            }
+
             long integerPart = (long)value;
             double scale = Pow10(decimalPlaces);
-            long fraction = (long)Math.Round((value - integerPart) * scale);
+            long fraction = (long)
+                Math.Round((value - integerPart) * scale, MidpointRounding.AwayFromZero);
             // 소수부 반올림이 자리올림되면 정수부로 캐리 (예: 1.999 → 2.00)
             if (fraction >= (long)scale)
             {
