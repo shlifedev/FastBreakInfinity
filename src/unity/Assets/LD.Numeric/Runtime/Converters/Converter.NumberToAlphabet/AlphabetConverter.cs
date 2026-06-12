@@ -14,6 +14,17 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static long GetExponent(double value)
         {
+            // Log10이 0/음수에서 -Inf/NaN을 내고 long 캐스팅에서 포화돼 쓰레기 지수가 됨.
+            // BigInteger 버전(BigInteger.Log10이 throw)과 동작을 맞춘다
+            if (double.IsNaN(value) || value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "지수는 양수에 대해서만 계산할 수 있습니다."
+                );
+            }
+
             var exponent = (long)(Math.Log10(value) / ExponentUnit) * ExponentUnit;
             // Math.Log10(1e21)이 20.999...로 나오는 플랫폼에서 단위가 한 단계 어긋나는 것 보정
             if (value / Math.Pow(10, exponent) >= 1000)
@@ -26,7 +37,13 @@ namespace LD.Numeric.IdleNumber
         // int, float, long은 암묵적으로 double로 변환되어 위 메서드 사용
         public static long GetExponent(BigInteger value)
         {
-            return (long)(BigInteger.Log10(value) / ExponentUnit) * ExponentUnit;
+            var exponent = (long)(BigInteger.Log10(value) / ExponentUnit) * ExponentUnit;
+            // double 버전과 같은 보정 — Log10(10^30)이 29.999...로 나오면 단위가 한 단계 어긋남
+            if (value / BigInteger.Pow(10, (int)exponent) >= 1000)
+            {
+                exponent += ExponentUnit;
+            }
+            return exponent;
         }
 
         #region 알파벳포함값 => 일반값 역함수

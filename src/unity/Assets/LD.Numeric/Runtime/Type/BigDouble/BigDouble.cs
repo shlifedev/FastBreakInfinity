@@ -161,6 +161,13 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Parse(string value)
         {
+            // CompareTo(null)/Equals(null)도 implicit string 변환을 타고 여기로 와서
+            // NRE 대신 명확한 예외를 던지게 한다
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (value.IndexOf('e') != -1 || value.IndexOf('E') != -1)
             {
                 var info = BigValueInfo.ExponentFormatToBigValueInfo(value);
@@ -216,7 +223,9 @@ namespace LD.Numeric.IdleNumber
             }
 
             var resultrounded = Math.Round(result);
-            if (Math.Abs(resultrounded - result) < 1e-10)
+            // 절대 임계값(1e-10)만으로는 1e8 이상 정수의 정규화 오차(상대 ~1e-16)를 못 잡아서
+            // 123456789가 123456788.99999999로 돌아옴. 상대 임계값(수 ulp 수준)을 함께 사용
+            if (Math.Abs(resultrounded - result) < Math.Max(1e-10, Math.Abs(result) * 1e-15))
                 return resultrounded;
             return result;
         }
@@ -890,6 +899,15 @@ namespace LD.Numeric.IdleNumber
 
             var n = value.ToDouble() + 1;
 
+            // 결과 지수 log10(n!) ≈ n·(log10 n − log10 e)가 long 범위를 넘으면 표현 불가.
+            // 방치하면 Pow 내부의 double→long 포화 캐스팅이 가짜 유한값을 만들어냄
+            if (
+                double.IsPositiveInfinity(n) || (n > 1 && n * (Math.Log10(n) - 1 / Ln10) > ExpLimit)
+            )
+            {
+                return PositiveInfinity;
+            }
+
             return Pow(
                     n
                         / 2.71828182845904523536
@@ -1091,6 +1109,12 @@ namespace LD.Numeric.IdleNumber
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
+            // 비율 1은 고정가라 등비 공식이 성립하지 않음 (log10(1) 나눗셈 → NaN)
+            if (priceRatio == BigDouble.One)
+            {
+                return BigDouble.Floor(resourcesAvailable / actualStart);
+            }
+
             //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
 
             return BigDouble.Floor(
@@ -1111,6 +1135,12 @@ namespace LD.Numeric.IdleNumber
         )
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
+
+            // 비율 1은 고정가 — 등비 공식은 0/0이 됨
+            if (priceRatio == BigDouble.One)
+            {
+                return actualStart * numItems;
+            }
 
             return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
         }

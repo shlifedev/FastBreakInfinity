@@ -12,6 +12,11 @@ namespace LD.Numeric.IdleNumber
 
         public BigDouble(string value, eFormat format)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             switch (format)
             {
                 case eFormat.Number:
@@ -31,6 +36,11 @@ namespace LD.Numeric.IdleNumber
 
         public BigDouble(string value)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (value.IndexOf('e') != -1 || value.IndexOf('E') != -1)
             {
                 this = new BigDouble(value, eFormat.NumberWithExponent);
