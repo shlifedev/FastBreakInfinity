@@ -1,15 +1,13 @@
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Numerics;
 using System.Threading;
 using Cysharp.Text;
-using LD.Numeric.IdleNumber;
 using Random = System.Random;
 
 namespace LD.Numeric.IdleNumber
 {
-    public partial struct BigDouble
+    public partial struct BigDouble : IComparable<BigDouble>, IEquatable<BigDouble>
     {
         public const double Tolerance = 1e-18;
 
@@ -29,10 +27,10 @@ namespace LD.Numeric.IdleNumber
         private const int AdditionPrecisionExponent = 14;
 
         // 수학 상수
-        private const double Ln10 = 2.30258509299404568402;         // Math.Log(10)
-        private const double Log2Of10 = 3.32192809488736234787;     // Math.Log2(10)
-        private const double Sqrt10 = 3.16227766016838;             // Math.Sqrt(10)
-        private const double CubeRoot10 = 2.1544346900318837;       // Math.Pow(10, 1.0/3)
+        private const double Ln10 = 2.30258509299404568402; // Math.Log(10)
+        private const double Log2Of10 = 3.32192809488736234787; // Math.Log2(10)
+        private const double Sqrt10 = 3.16227766016838; // Math.Sqrt(10)
+        private const double CubeRoot10 = 2.1544346900318837; // Math.Pow(10, 1.0/3)
         private const double TwoThirdsPowerOf10 = 4.6415888336127789; // Math.Pow(10, 2.0/3)
 
         private double mantissa;
@@ -109,7 +107,7 @@ namespace LD.Numeric.IdleNumber
             else
             {
                 mantissa = mantissa / PowersOf10.Lookup(tempExponent);
-            } 
+            }
             return FromMantissaExponentNoNormalize(mantissa, exponent + tempExponent);
         }
 
@@ -126,7 +124,10 @@ namespace LD.Numeric.IdleNumber
 
         public static readonly BigDouble One = FromMantissaExponentNoNormalize(1, 0);
 
-        public static readonly BigDouble NaN = FromMantissaExponentNoNormalize(double.NaN, long.MinValue);
+        public static readonly BigDouble NaN = FromMantissaExponentNoNormalize(
+            double.NaN,
+            long.MinValue
+        );
 
         public static bool IsNaN(BigDouble value)
         {
@@ -182,7 +183,7 @@ namespace LD.Numeric.IdleNumber
 
         public float ToFloat()
         {
-            return (float)this.Mantissa;
+            return (float)ToDouble();
         }
 
         public double ToDouble()
@@ -220,9 +221,15 @@ namespace LD.Numeric.IdleNumber
             return result;
         }
 
-        
         internal string CreateString(int decimalCount)
         {
+            // AdjustedMantissa의 3자리 단위 보정은 알파벳 표기용이라 음수 지수에 적용하면
+            // 0.5가 500으로 표시됨. 1 미만 값은 double 그대로 출력
+            if (exponent < 0)
+            {
+                return ToDouble().ToString(CultureInfo.InvariantCulture);
+            }
+
             var adjustedMantissa = AdjustedMantissa();
             adjustedMantissa = Math.Round(adjustedMantissa, 3);
             if (exponent < 3)
@@ -233,14 +240,14 @@ namespace LD.Numeric.IdleNumber
             return adjustedMantissa.OptimizeToString(decimalCount)
                 + AlphabetManager.GetAlphabetUnitFromExponent(this.exponent);
         }
- 
-        
+
         public string ToStringMantissaExponent()
-        { 
+        {
             return ZString.Format("{0}e{1}", mantissa, exponent);
         }
+
         public override string ToString()
-        { 
+        {
             var adjustedMantissa = AdjustedMantissa();
             adjustedMantissa = Math.Round(adjustedMantissa, 3);
             var digits = NumberUtility.GetDigits(adjustedMantissa);
@@ -450,11 +457,9 @@ namespace LD.Numeric.IdleNumber
             }
             catch (OverflowException)
             {
-                // 오버플로우 시: 부호에 따라 Infinity 또는 Zero 반환
+                // 덧셈 오버플로는 두 지수의 부호가 같을 때만 발생 — 양수 방향이면 Infinity, 음수 방향이면 Zero
                 bool positiveResult = (left.Mantissa > 0) == (right.Mantissa > 0);
-                if ((left.Exponent > 0 && right.Exponent > 0)
-                    || (left.Exponent > 0 && right.Exponent >= 0)
-                    || (left.Exponent >= 0 && right.Exponent > 0))
+                if (left.Exponent > 0)
                     return positiveResult ? PositiveInfinity : NegativeInfinity;
                 return Zero;
             }
@@ -560,7 +565,7 @@ namespace LD.Numeric.IdleNumber
                 || IsInfinity(this)
                 || IsInfinity(other)
             )
-            { 
+            {
                 return Mantissa.CompareTo(other.Mantissa);
             }
             if (Mantissa > 0 && other.Mantissa < 0)
@@ -814,8 +819,8 @@ namespace LD.Numeric.IdleNumber
             catch (OverflowException)
             {
                 bool positiveResult = mantissa > 0;
-                bool exponentPositive = (value.Exponent > 0 && power > 0)
-                    || (value.Exponent < 0 && power < 0);
+                bool exponentPositive =
+                    (value.Exponent > 0 && power > 0) || (value.Exponent < 0 && power < 0);
                 if (exponentPositive)
                     return positiveResult ? PositiveInfinity : NegativeInfinity;
                 return Zero;
@@ -837,7 +842,8 @@ namespace LD.Numeric.IdleNumber
 
         private static bool Is10(BigDouble value)
         {
-            return value.Exponent == 1 && value.Mantissa - 1 < double.Epsilon;
+            // Math.Abs 없이는 mantissa가 -1인 -10도 통과해 Pow(-10, n)의 부호가 사라짐
+            return value.Exponent == 1 && Math.Abs(value.Mantissa - 1) < double.Epsilon;
         }
 
         private static BigDouble PowInternal(BigDouble value, double other)
@@ -870,7 +876,7 @@ namespace LD.Numeric.IdleNumber
 
             //UN-SAFETY: This should return NaN when mantissa is negative and value is noninteger.
             var result = Pow10(other * AbsLog10(value)); //this is 2x faster and gives same values AFAIK
-            if (Sign(value) == -1 && AreEqual(other % 2, 1))
+            if (Sign(value) == -1 && AreEqual(Math.Abs(other % 2), 1))
             {
                 return -result;
             }
@@ -931,10 +937,7 @@ namespace LD.Numeric.IdleNumber
             var mod = value.Exponent % 3;
             if (mod == 1 || mod == -1)
             {
-                return Normalize(
-                    newmantissa * CubeRoot10,
-                    (long)Math.Floor(value.Exponent / 3.0)
-                );
+                return Normalize(newmantissa * CubeRoot10, (long)Math.Floor(value.Exponent / 3.0));
             }
 
             if (mod != 0)
@@ -1002,151 +1005,6 @@ namespace LD.Numeric.IdleNumber
         }
 
         /// <summary>
-        /// The BigNumber class implements methods for formatting and parsing big numeric values.
-        /// </summary>
-        private static class BigNumber
-        {
-            public static string FormatBigDouble(
-                BigDouble value,
-                string format,
-                IFormatProvider formatProvider
-            )
-            {
-                if (IsNaN(value))
-                    return "NaN";
-                if (value.Exponent >= ExpLimit)
-                {
-                    return value.Mantissa > 0 ? "Infinity" : "-Infinity";
-                }
-
-                int formatDigits;
-                var formatSpecifier = ParseFormatSpecifier(format, out formatDigits);
-                switch (formatSpecifier)
-                {
-                    case 'R':
-                    case 'G':
-                        return FormatGeneral(value, formatDigits);
-                    case 'E':
-                        return FormatExponential(value, formatDigits);
-                    case 'F':
-                        return FormatFixed(value, formatDigits);
-                }
-                throw new FormatException($"Unknown string format '{formatSpecifier}'");
-            }
-
-            private static char ParseFormatSpecifier(string format, out int digits)
-            {
-                const char customFormat = (char)0;
-                digits = -1;
-                if (string.IsNullOrEmpty(format))
-                {
-                    return 'R';
-                }
-
-                var i = 0;
-                var ch = format[i];
-                if ((ch < 'A' || ch > 'Z') && (ch < 'a' || ch > 'z'))
-                {
-                    return customFormat;
-                }
-
-                i++;
-                var n = -1;
-
-                if (i < format.Length && format[i] >= '0' && format[i] <= '9')
-                {
-                    n = format[i++] - '0';
-                    while (i < format.Length && format[i] >= '0' && format[i] <= '9')
-                    {
-                        n = n * 10 + (format[i++] - '0');
-                        if (n >= 10)
-                            break;
-                    }
-                }
-
-                if (i < format.Length && format[i] != '\0')
-                {
-                    return customFormat;
-                }
-
-                digits = n;
-                return ch;
-            }
-
-            private static string FormatGeneral(BigDouble value, int places)
-            {
-                if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
-                {
-                    return "0";
-                }
-
-                var format = places > 0 ? $"G{places}" : "G";
-                if (value.Exponent < 21 && value.Exponent > -7)
-                {
-                    return value.ToDouble().ToString(format, CultureInfo.InvariantCulture);
-                }
-
-                return value.Mantissa.ToString(format, CultureInfo.InvariantCulture)
-                    + "E"
-                    + (value.Exponent >= 0 ? "+" : "")
-                    + value.Exponent.ToString(CultureInfo.InvariantCulture);
-            }
-
-            private static string ToFixed(double value, int places)
-            {
-                return value.ToString($"F{places}", CultureInfo.InvariantCulture);
-            }
-
-            private static string FormatExponential(BigDouble value, int places)
-            {
-                if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
-                {
-                    return "0" + (places > 0 ? ".".PadRight(places + 1, '0') : "") + "E+0";
-                }
-
-                var len = (places >= 0 ? places : MaxSignificantDigits) + 1;
-                var numDigits = (int)Math.Ceiling(Math.Log10(Math.Abs(value.Mantissa)));
-                var rounded =
-                    Math.Round(value.Mantissa * Math.Pow(10, len - numDigits))
-                    * Math.Pow(10, numDigits - len);
-
-                var mantissa = ToFixed(rounded, Math.Max(len - numDigits, 0));
-                if (mantissa != "0" && places < 0)
-                {
-                    mantissa = mantissa.TrimEnd('0', '.');
-                }
-                return mantissa + "E" + (value.Exponent >= 0 ? "+" : "") + value.Exponent;
-            }
-
-            private static string FormatFixed(BigDouble value, int places)
-            {
-                if (places < 0)
-                {
-                    places = MaxSignificantDigits;
-                }
-                if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
-                {
-                    return "0" + (places > 0 ? ".".PadRight(places + 1, '0') : "");
-                }
-
-                // two cases:
-                // 1) exponent is 17 or greater: just print out mantissa with the appropriate number of zeroes after it
-                // 2) exponent is 16 or less: use basic toFixed
-
-                if (value.Exponent >= MaxSignificantDigits)
-                {
-                    // TODO: StringBuilder-optimizable
-                    return value
-                            .Mantissa.ToString(CultureInfo.InvariantCulture)
-                            .Replace(".", "")
-                            .PadRight((int)value.Exponent + 1, '0')
-                        + (places > 0 ? ".".PadRight(places + 1, '0') : "");
-                }
-                return ToFixed(value.ToDouble(), places);
-            }
-        }
-
-        /// <summary>
         /// We need this lookup table because Math.pow(10, exponent) when exponent's absolute value
         /// is large is slightly inaccurate. you can fix it with the power of math... or just make
         /// a lookup table. Faster AND simpler.
@@ -1159,13 +1017,11 @@ namespace LD.Numeric.IdleNumber
 
             static PowersOf10()
             {
-                var index = 0;
+                // FastDouble.ParseDouble은 내부적으로 Math.Pow를 쓰므로 여기서 사용하면
+                // 테이블의 존재 이유가 사라짐. 정확히 반올림된 값을 주는 double.Parse 사용
                 for (var i = 0; i < Powers.Length; i++)
                 {
-                    Powers[index++] = FastDouble.ParseDouble(
-                        "1e" + (i - IndexOf0),
-                        FractionalPartAccuracy
-                    );
+                    Powers[i] = double.Parse("1e" + (i - IndexOf0), CultureInfo.InvariantCulture);
                 }
             }
 
@@ -1187,8 +1043,10 @@ namespace LD.Numeric.IdleNumber
     public static class BigMath
     {
         // ThreadLocal로 스레드 안전성 확보
-        private static readonly ThreadLocal<Random> ThreadLocalRandom =
-            new ThreadLocal<Random>(() => new Random());
+        private static readonly ThreadLocal<Random> ThreadLocalRandom = new ThreadLocal<Random>(
+            () =>
+                new Random()
+        );
         private static Random Random => ThreadLocalRandom.Value;
 
         /// <summary>

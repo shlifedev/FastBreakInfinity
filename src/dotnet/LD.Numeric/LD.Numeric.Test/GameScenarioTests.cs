@@ -69,10 +69,6 @@ public class GameScenarioTests
 
         Console.WriteLine($"100번 1.1배 성장: {value.Mantissa}e{value.Exponent}");
 
-        Assert.That(
-            value.Exponent >= 3 && value.Exponent <= 5,
-            Is.True,
-            "1.1^100의 지수는 4 근처"
-        );
+        Assert.That(value.Exponent >= 3 && value.Exponent <= 5, Is.True, "1.1^100의 지수는 4 근처");
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Cysharp.Text;
 
 namespace LD.Numeric.IdleNumber
@@ -7,9 +8,29 @@ namespace LD.Numeric.IdleNumber
     {
         private static readonly double[] PositivePowersOf10 =
         {
-            1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
-            1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
-            1e20, 1e21, 1e22
+            1e0,
+            1e1,
+            1e2,
+            1e3,
+            1e4,
+            1e5,
+            1e6,
+            1e7,
+            1e8,
+            1e9,
+            1e10,
+            1e11,
+            1e12,
+            1e13,
+            1e14,
+            1e15,
+            1e16,
+            1e17,
+            1e18,
+            1e19,
+            1e20,
+            1e21,
+            1e22,
         };
 
         private static double Pow10(int exp)
@@ -53,7 +74,9 @@ namespace LD.Numeric.IdleNumber
                 {
                     if (hasExponent)
                     {
-                        exponent = exponent * 10 + (c - '0');
+                        // int 오버플로 랩어라운드 방지 — 이 크기면 결과는 어차피 0 또는 Infinity
+                        if (exponent < 100_000_000)
+                            exponent = exponent * 10 + (c - '0');
                     }
                     else if (decimalPlaces < maxDecimalPlaces || !hasDecimal)
                     {
@@ -122,7 +145,13 @@ namespace LD.Numeric.IdleNumber
                     return sb.ToString();
                 }
             }
-            Span<char> buffer = stackalloc char[32];
+            // long 캐스팅 범위를 벗어나는 값은 표준 포맷터로 처리
+            if (Math.Abs(value) >= 9.2e18 || decimalPlaces > 17)
+            {
+                return value.ToString("F" + decimalPlaces, CultureInfo.InvariantCulture);
+            }
+
+            Span<char> buffer = stackalloc char[40];
             int pos = 0;
             if (value < 0)
             {
@@ -131,11 +160,18 @@ namespace LD.Numeric.IdleNumber
             }
 
             long integerPart = (long)value;
-            double fractionalPart = value - integerPart;
+            double scale = Pow10(decimalPlaces);
+            long fraction = (long)Math.Round((value - integerPart) * scale);
+            // 소수부 반올림이 자리올림되면 정수부로 캐리 (예: 1.999 → 2.00)
+            if (fraction >= (long)scale)
+            {
+                integerPart++;
+                fraction = 0;
+            }
+
             pos += IntegerToString(integerPart, buffer.Slice(pos));
             buffer[pos++] = '.';
-            fractionalPart = Math.Round(fractionalPart * Pow10(decimalPlaces), decimalPlaces);
-            pos += IntegerToString((long)fractionalPart, buffer.Slice(pos), decimalPlaces);
+            pos += IntegerToString(fraction, buffer.Slice(pos), decimalPlaces);
             return buffer.Slice(0, pos).ToString();
         }
 
@@ -146,9 +182,9 @@ namespace LD.Numeric.IdleNumber
             {
                 buffer[pos++] = (char)('0' + value % 10);
                 value /= 10;
-            } 
-            for (int i = 0; i < pos / 2; i++) 
-                (buffer[i], buffer[pos - i - 1]) = (buffer[pos - i - 1], buffer[i]); 
+            }
+            for (int i = 0; i < pos / 2; i++)
+                (buffer[i], buffer[pos - i - 1]) = (buffer[pos - i - 1], buffer[i]);
 
             return pos;
         }

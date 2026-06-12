@@ -14,7 +14,13 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static long GetExponent(double value)
         {
-            return (long)(Math.Log10(value) / ExponentUnit) * ExponentUnit;
+            var exponent = (long)(Math.Log10(value) / ExponentUnit) * ExponentUnit;
+            // Math.Log10(1e21)이 20.999...로 나오는 플랫폼에서 단위가 한 단계 어긋나는 것 보정
+            if (value / Math.Pow(10, exponent) >= 1000)
+            {
+                exponent += ExponentUnit;
+            }
+            return exponent;
         }
 
         // int, float, long은 암묵적으로 double로 변환되어 위 메서드 사용
@@ -54,11 +60,11 @@ namespace LD.Numeric.IdleNumber
 
         #region Value To Alphabet
 
-        public static string ConvertToAlphabetUnit(this int number, int maxDecimalPoint = 2)
-            => ConvertToAlphabetUnit((double)number, maxDecimalPoint);
+        public static string ConvertToAlphabetUnit(this int number, int maxDecimalPoint = 2) =>
+            ConvertToAlphabetUnit((double)number, maxDecimalPoint);
 
-        public static string ConvertToAlphabetUnit(this float number, int maxDecimalPoint = 2)
-            => ConvertToAlphabetUnit((double)number, maxDecimalPoint);
+        public static string ConvertToAlphabetUnit(this float number, int maxDecimalPoint = 2) =>
+            ConvertToAlphabetUnit((double)number, maxDecimalPoint);
 
         public static string ConvertToAlphabetUnit(this double number, int maxDecimalPoint = 2)
         {

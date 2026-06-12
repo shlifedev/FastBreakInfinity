@@ -4,18 +4,22 @@ namespace LD.Numeric.IdleNumber
 {
     public static class AlphabetManager
     {
-        static ConcurrentDictionary<long, string> unitCache = new ConcurrentDictionary<long, string>();
-        static ConcurrentDictionary<string, long> reverseUnitCache = new ConcurrentDictionary<string, long>();
+        static ConcurrentDictionary<long, string> unitCache =
+            new ConcurrentDictionary<long, string>();
+        static ConcurrentDictionary<string, long> reverseUnitCache =
+            new ConcurrentDictionary<string, long>();
 
 #if UNITY_EDITOR
-[UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        [UnityEngine.RuntimeInitializeOnLoadMethod(
+            UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration
+        )]
 #endif
         internal static void Reset()
         {
             unitCache.Clear();
             reverseUnitCache.Clear();
         }
-        
+
         /// <summary>
         /// 알파벳 단위를 0-indexed 인덱스로 변환 (A=0, B=1, ..., Z=25, AA=26)
         /// GetAlphabetUnit의 역함수.

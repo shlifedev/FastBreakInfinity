@@ -13,7 +13,9 @@
             <summary>
                 This will be called for each found installed package in the project.
             </summary>
-            <param name="installedPackage">The installedPackage created from found nuspec file.</param>
+            <param name="installedPackage"
+                >The installedPackage created from found nuspec file.</param
+            >
         </member>
         <member name="T:NugetForUnity.PluginAPI.ExtensionPoints.IPackageButtonsHandler">
             <summary>
@@ -24,9 +26,15 @@
             <summary>
                 This method will be called for each package that is rendered in NugetForUnity window.
             </summary>
-            <param name="package">Package being renderer, either online package or installed package.</param>
-            <param name="installedPackage">If package is installed this represents the installed version, otherwise it is null.</param>
-            <param name="existsInUnity">True if package installation should be disabled because it is already included in Unity.</param>
+            <param name="package"
+                >Package being renderer, either online package or installed package.</param
+            >
+            <param name="installedPackage"
+                >If package is installed this represents the installed version, otherwise it is null.</param
+            >
+            <param name="existsInUnity"
+                >True if package installation should be disabled because it is already included in Unity.</param
+            >
         </member>
         <member name="T:NugetForUnity.PluginAPI.ExtensionPoints.IPackageInstallFileHandler">
             <summary>
@@ -38,7 +46,9 @@
                 This will be called when name of the folder where package will be installed should be determined.
             </summary>
             <param name="package">The package whose folder name is being determined.</param>
-            <param name="startName">The starting default name that can be modified or replaced.</param>
+            <param name="startName"
+                >The starting default name that can be modified or replaced.</param
+            >
             <returns>New package folder name.</returns>
         </member>
         <member name="M:NugetForUnity.PluginAPI.ExtensionPoints.IPackageInstallFileHandler.HandleFileExtraction(NugetForUnity.PluginAPI.Models.INugetPackage,System.IO.Compression.ZipArchiveEntry,System.String)">
@@ -47,7 +57,9 @@
             </summary>
             <param name="package">Package that is being installed.</param>
             <param name="entry">Zip entry that is about to be processed.</param>
-            <param name="extractDirectory">The directory where the package is being installed.</param>
+            <param name="extractDirectory"
+                >The directory where the package is being installed.</param
+            >
             <returns>True if this method handled the entry and doesn't want default handling to be executed, false otherwise.</returns>
         </member>
         <member name="T:NugetForUnity.PluginAPI.ExtensionPoints.IPackageUninstallHandler">
@@ -120,7 +132,9 @@
             <summary>
                 Register a class that will be called when installed package is found.
             </summary>
-            <param name="foundInstalledPackageHandler">The found installed package handler to register.</param>
+            <param name="foundInstalledPackageHandler"
+                >The found installed package handler to register.</param
+            >
         </member>
         <member name="T:NugetForUnity.PluginAPI.Models.INugetPackage">
             <summary>
@@ -157,7 +171,8 @@
             <summary>
                 Gets or sets the normalized version number of the NuGet package.
                 This is the normalized version number without build-metadata e.g. <b>1.0.0+b3a8</b> is normalized to <b>1.0.0</b>.
-            </summary>
+            </summary
+            >
         </member>
         <member name="M:NugetForUnity.PluginAPI.Models.INugetPackageIdentifier.GetPackageInstallPath(System.String)">
             <summary>
@@ -166,7 +181,8 @@
             <param name="prefix">
                 In case you need to manipulate the folder to a bit different name you can provide
                 the prefix you want to add to folder name here.
-            </param>
+            </param
+            >
             <returns>
                 Folder path where this package is or will be installed with an optional prefix to
                 final path segment.
@@ -191,13 +207,17 @@
             <summary>
                 Allows plugin to register a function that will modify the contents of default new nuspec file.
             </summary>
-            <param name="customizer">The function that will receive default nuspec file and modify it.</param>
+            <param name="customizer"
+                >The function that will receive default nuspec file and modify it.</param
+            >
         </member>
         <member name="M:NugetForUnity.PluginAPI.Models.INugetPluginService.CreateNuspecAndOpenEditor(System.String)">
             <summary>
                 Allows plugin to create a new nuspec file on the given location.
             </summary>
-            <param name="destinationDirectory">Either the absolute path within project to an existing directory or path relative to project's Asset folder.</param>
+            <param name="destinationDirectory"
+                >Either the absolute path within project to an existing directory or path relative to project's Asset folder.</param
+            >
         </member>
         <member name="M:NugetForUnity.PluginAPI.Models.INugetPluginService.LogError(System.String)">
             <summary>
@@ -278,13 +298,15 @@
             <summary>
                 Gets the path to a icon file. The path is relative to the root folder of the package. This is a alternative to using a URL <see cref="P:NugetForUnity.PluginAPI.Models.INuspecFile.IconUrl" />
                 .
-            </summary>
+            </summary
+            >
         </member>
         <member name="P:NugetForUnity.PluginAPI.Models.INuspecFile.IconFilePath">
             <summary>
                 Gets the full path to a icon file. This is only set if the .nuspec file contains a <see cref="P:NugetForUnity.PluginAPI.Models.INuspecFile.Icon" />. This is a alternative to using a URL
                 <see cref="P:NugetForUnity.PluginAPI.Models.INuspecFile.IconUrl" />.
-            </summary>
+            </summary
+            >
         </member>
         <member name="P:NugetForUnity.PluginAPI.Models.INuspecFile.RequireLicenseAcceptance">
             <summary>

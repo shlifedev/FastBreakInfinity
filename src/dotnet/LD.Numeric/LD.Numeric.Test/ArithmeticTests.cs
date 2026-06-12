@@ -58,7 +58,11 @@ public class ArithmeticTests
         BigDouble b = new BigDouble(1.0, 100);
         BigDouble result = a - b;
 
-        Assert.That(result.Exponent >= 93 && result.Exponent <= 95, Is.True, "1.000001e100 - 1e100 ≈ 1e94");
+        Assert.That(
+            result.Exponent >= 93 && result.Exponent <= 95,
+            Is.True,
+            "1.000001e100 - 1e100 ≈ 1e94"
+        );
     }
 
     // ===== Multiply 테스트 =====

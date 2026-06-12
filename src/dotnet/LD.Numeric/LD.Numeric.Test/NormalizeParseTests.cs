@@ -12,13 +12,7 @@ public class NormalizeParseTests
     [Test]
     public void Normalize_MantissaInRange()
     {
-        var testCases = new[]
-        {
-            (0.5, 100L),
-            (50.0, 100L),
-            (0.001, 100L),
-            (999.9, 100L),
-        };
+        var testCases = new[] { (0.5, 100L), (50.0, 100L), (0.001, 100L), (999.9, 100L) };
 
         foreach (var (m, e) in testCases)
         {

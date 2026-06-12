@@ -21,13 +21,9 @@ namespace LD.Numeric.IdleNumber
                 throw new ArgumentException("알파벳을 올바르게 입력했나요.. 값이 비어있습니다.");
             }
 
-            long exponent = 0;
-            int length = unit.Length;
-            for (int i = 0; i < length; i++)
-            {
-                int letterValue = unit[i] - 'A' + 1;
-                exponent += letterValue * (int)Math.Pow(26, length - i - 1);
-            }
+            // AlphabetManager는 0-indexed(A=0)이므로 +1해서 1-indexed 값으로 환산.
+            // (int)Math.Pow(26, n) 방식은 7글자 이상 단위에서 int 오버플로가 났음
+            long exponent = AlphabetManager.GetIndexFromUnit(unit) + 1;
 
             return (exponent * ExponentUnit, exponent * ExponentUnit + 2);
         }
@@ -67,6 +63,6 @@ namespace LD.Numeric.IdleNumber
             long mod = ((Exponent % ExponentUnit) + ExponentUnit) % ExponentUnit;
             double mul = Math.Pow(10, mod);
             return roundedMantissa * mul;
-        } 
+        }
     }
 }

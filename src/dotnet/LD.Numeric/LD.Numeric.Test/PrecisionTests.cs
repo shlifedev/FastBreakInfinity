@@ -107,7 +107,7 @@ public class PrecisionTests
         // 1.0 근처에서 표현 가능한 최소 차이는 약 2.2e-16
         // 1e-17은 double로 표현 불가능 (1.0 + 1e-17 == 1.0)
         BigDouble a = new BigDouble(1.0, 100);
-        BigDouble b = new BigDouble(1.0 + 1e-15, 100);  // 1e-15 차이 (표현 가능)
+        BigDouble b = new BigDouble(1.0 + 1e-15, 100); // 1e-15 차이 (표현 가능)
 
         Console.WriteLine($"a.Mantissa: {a.Mantissa:R}");
         Console.WriteLine($"b.Mantissa: {b.Mantissa:R}");
@@ -121,7 +121,7 @@ public class PrecisionTests
     {
         // Tolerance(1e-18) 미만 차이는 같다고 판정될 수 있음
         BigDouble a = new BigDouble(1.0, 100);
-        BigDouble b = new BigDouble(1.0 + 1e-19, 100);  // 1e-19 차이
+        BigDouble b = new BigDouble(1.0 + 1e-19, 100); // 1e-19 차이
 
         // 1e-19 < 1e-18 (Tolerance)이므로 같다고 판정
         // 단, double 정밀도 한계로 실제로 같은 값이 될 수 있음
@@ -151,7 +151,7 @@ public class PrecisionTests
     {
         // 돈 부족 체크: 0.000001 부족해도 구매 불가
         BigDouble money = new BigDouble("9.999999999999e100");
-        BigDouble price = new BigDouble("1e101");  // 10e100
+        BigDouble price = new BigDouble("1e101"); // 10e100
 
         Assert.That(money < price, Is.True, "돈 부족");
         Assert.That(money >= price, Is.False, "구매 불가");
@@ -161,8 +161,8 @@ public class PrecisionTests
     public void Precision_GameScenario_ProgressCheck()
     {
         // 진행도 체크: 99.9999%와 100%는 다름
-        BigDouble current = new BigDouble(9.99999, 10);   // 99.9999e9
-        BigDouble target = new BigDouble(1.0, 11);        // 100e9 = 1e11
+        BigDouble current = new BigDouble(9.99999, 10); // 99.9999e9
+        BigDouble target = new BigDouble(1.0, 11); // 100e9 = 1e11
 
         Assert.That(current < target, Is.True, "목표 미달성");
         Assert.That(current == target, Is.False);
@@ -214,7 +214,7 @@ public class PrecisionTests
     {
         // 16번째 유효숫자 차이 (double 정밀도 한계)
         BigDouble a = new BigDouble(1.0000000000000000, 100);
-        BigDouble b = new BigDouble(1.0000000000000002, 100);  // 마지막 자리 2
+        BigDouble b = new BigDouble(1.0000000000000002, 100); // 마지막 자리 2
 
         Console.WriteLine($"a: {a.Mantissa:R}, b: {b.Mantissa:R}");
         Console.WriteLine($"diff: {Math.Abs(a.Mantissa - b.Mantissa):E}");
@@ -342,7 +342,9 @@ public class PrecisionTests
 
         for (int i = 0; i < 10; i++)
         {
-            double val = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(baseVal) + i);
+            double val = BitConverter.Int64BitsToDouble(
+                BitConverter.DoubleToInt64Bits(baseVal) + i
+            );
             values.Add(new BigDouble(val, 100));
         }
 
@@ -395,7 +397,7 @@ public class PrecisionTests
         // 연산 후에도 충분히 큰 차이는 유지
         // 주의: 극미세 차이(1e-15 이하)는 덧셈 정규화로 사라질 수 있음
         BigDouble a = new BigDouble(1.00000000000, 100);
-        BigDouble b = new BigDouble(1.00000000001, 100);  // 1e-11 차이 (충분히 큼)
+        BigDouble b = new BigDouble(1.00000000001, 100); // 1e-11 차이 (충분히 큼)
 
         BigDouble sum_a = a + new BigDouble(1, 100);
         BigDouble sum_b = b + new BigDouble(1, 100);

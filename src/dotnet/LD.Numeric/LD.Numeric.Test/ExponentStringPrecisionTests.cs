@@ -77,8 +77,8 @@ public class ExponentStringPrecisionTests
     public void ExponentString_SlightlyDifferent_DifferentExponent()
     {
         // 다른 지수로 표현된 미세한 차이
-        BigDouble a = new BigDouble("13.333192919230e99");   // 1.3333192919230e100
-        BigDouble b = new BigDouble("1.3333192919231e100");  // 1.3333192919231e100
+        BigDouble a = new BigDouble("13.333192919230e99"); // 1.3333192919230e100
+        BigDouble b = new BigDouble("1.3333192919231e100"); // 1.3333192919231e100
 
         Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
         Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
@@ -123,7 +123,7 @@ public class ExponentStringPrecisionTests
     public void ExponentString_GreaterThan()
     {
         BigDouble a = new BigDouble("1.3333192919231e100");
-        BigDouble b = new BigDouble("13.333192919230e99");  // 1.3333192919230e100
+        BigDouble b = new BigDouble("13.333192919230e99"); // 1.3333192919230e100
 
         Assert.That(a > b, Is.True, "1.3333192919231e100 > 1.3333192919230e100");
         Assert.That(b > a, Is.False);
@@ -132,7 +132,7 @@ public class ExponentStringPrecisionTests
     [Test]
     public void ExponentString_LessThan()
     {
-        BigDouble a = new BigDouble("13.333192919230e99");  // 1.3333192919230e100
+        BigDouble a = new BigDouble("13.333192919230e99"); // 1.3333192919230e100
         BigDouble b = new BigDouble("1.3333192919231e100");
 
         Assert.That(a < b, Is.True);
@@ -196,8 +196,8 @@ public class ExponentStringPrecisionTests
     public void ExponentString_UltraTiny_DifferentExponentNotation()
     {
         // 다른 지수 표기로 극미세 차이
-        BigDouble a = new BigDouble("10.00000000000000e99");   // 1.0e100
-        BigDouble b = new BigDouble("1.000000000000001e100");  // 1.000000000000001e100
+        BigDouble a = new BigDouble("10.00000000000000e99"); // 1.0e100
+        BigDouble b = new BigDouble("1.000000000000001e100"); // 1.000000000000001e100
 
         Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
         Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
@@ -290,7 +290,7 @@ public class ExponentStringPrecisionTests
     public void ExponentString_GameScenario_PriceComparison()
     {
         // 게임: 가격 비교 (다른 지수 표현)
-        BigDouble money = new BigDouble("99.99999999999e98");   // 9.999999999999e99
+        BigDouble money = new BigDouble("99.99999999999e98"); // 9.999999999999e99
         BigDouble price = new BigDouble("1.0e100");
 
         Assert.That(money < price, Is.True, "돈 부족");
@@ -301,8 +301,8 @@ public class ExponentStringPrecisionTests
     public void ExponentString_GameScenario_DamageCalculation()
     {
         // 게임: 데미지 계산 (다른 지수 표현)
-        BigDouble baseDamage = new BigDouble("15.5e49");     // 1.55e50
-        BigDouble multiplier = new BigDouble("20.0e-1");     // 2.0
+        BigDouble baseDamage = new BigDouble("15.5e49"); // 1.55e50
+        BigDouble multiplier = new BigDouble("20.0e-1"); // 2.0
         BigDouble expected = new BigDouble("3.1e50");
 
         BigDouble actual = baseDamage * multiplier;
@@ -336,9 +336,9 @@ public class ExponentStringPrecisionTests
     {
         // 정규화 후 같은 값이 되는 경우 (10의 거듭제곱만)
         // 주의: 0.1, 0.01 같은 값은 부동소수점 오차 발생 가능
-        BigDouble a = new BigDouble("100e98");      // 1e100
-        BigDouble b = new BigDouble("10e99");       // 1e100
-        BigDouble c = new BigDouble("1e100");       // 1e100
+        BigDouble a = new BigDouble("100e98"); // 1e100
+        BigDouble b = new BigDouble("10e99"); // 1e100
+        BigDouble c = new BigDouble("1e100"); // 1e100
 
         Assert.That(a == b, Is.True, "100e98 == 10e99");
         Assert.That(b == c, Is.True, "10e99 == 1e100");
@@ -367,8 +367,8 @@ public class ExponentStringPrecisionTests
     public void ExponentString_NormalizedComparison_SlightlyDifferent()
     {
         // 정규화 후 미세하게 다른 경우
-        BigDouble a = new BigDouble("100.0000000001e98");   // 1.000000000001e100
-        BigDouble b = new BigDouble("1e100");               // 1e100
+        BigDouble a = new BigDouble("100.0000000001e98"); // 1.000000000001e100
+        BigDouble b = new BigDouble("1e100"); // 1e100
 
         Assert.That(a == b, Is.False, "정규화 후 미세 차이");
         Assert.That(a > b, Is.True);
@@ -379,7 +379,7 @@ public class ExponentStringPrecisionTests
     [Test]
     public void ExponentString_CompareTo_Consistency()
     {
-        BigDouble a = new BigDouble("13.333192919231e99");  // 1.3333192919231e100
+        BigDouble a = new BigDouble("13.333192919231e99"); // 1.3333192919231e100
         BigDouble b = new BigDouble("1.3333192919230e100"); // 1.3333192919230e100
 
         int compare = a.CompareTo(b);

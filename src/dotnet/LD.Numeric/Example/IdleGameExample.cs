@@ -131,7 +131,9 @@ public class IdleGameExample
     /// </summary>
     public void ShowMenu()
     {
-        Console.WriteLine("명령어: [c]클릭 [1]클릭업그레이드 [2]자동업그레이드 [s]상태 [a]자동생산 [q]종료");
+        Console.WriteLine(
+            "명령어: [c]클릭 [1]클릭업그레이드 [2]자동업그레이드 [s]상태 [a]자동생산 [q]종료"
+        );
     }
 
     /// <summary>
@@ -194,9 +196,9 @@ public class BigDoubleDemo
 
         // 1. 다양한 생성자
         Console.WriteLine("1. 생성자 예시:");
-        var a = new BigDouble(1.5, 100);           // mantissa, exponent
-        var b = new BigDouble("1.23e50");          // 문자열
-        var c = new BigDouble(12345.6789);         // double
+        var a = new BigDouble(1.5, 100); // mantissa, exponent
+        var b = new BigDouble("1.23e50"); // 문자열
+        var c = new BigDouble(12345.6789); // double
         Console.WriteLine($"   new BigDouble(1.5, 100) = {a.ToStringMantissaExponent()}");
         Console.WriteLine($"   new BigDouble(\"1.23e50\") = {b.ToStringMantissaExponent()}");
         Console.WriteLine($"   new BigDouble(12345.6789) = {c}");
@@ -215,7 +217,9 @@ public class BigDoubleDemo
         var small = new BigDouble("1e50");
         var large = new BigDouble("1e100");
         Console.WriteLine($"   {small} < {large} = {small < large}");
-        Console.WriteLine($"   {small} == {new BigDouble("1e50")} = {small == new BigDouble("1e50")}");
+        Console.WriteLine(
+            $"   {small} == {new BigDouble("1e50")} = {small == new BigDouble("1e50")}"
+        );
         Console.WriteLine($"   {large} > {small} = {large > small}");
 
         // 4. 수학 함수
@@ -229,11 +233,11 @@ public class BigDoubleDemo
         Console.WriteLine("\n5. 알파벳 단위 표시:");
         var values = new[]
         {
-            new BigDouble(1.234, 3),   // A
-            new BigDouble(1.234, 6),   // B
-            new BigDouble(1.234, 78),  // Z
-            new BigDouble(1.234, 81),  // AA
-            new BigDouble(1.234, 84),  // AB
+            new BigDouble(1.234, 3), // A
+            new BigDouble(1.234, 6), // B
+            new BigDouble(1.234, 78), // Z
+            new BigDouble(1.234, 81), // AA
+            new BigDouble(1.234, 84), // AB
         };
         foreach (var v in values)
         {
