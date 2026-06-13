@@ -5,6 +5,8 @@ namespace LD.Numeric.IdleNumber
 {
     public static class AlphabetManager
     {
+        private const int MaxUnitLength = 16;
+
         static ConcurrentDictionary<long, string> unitCache =
             new ConcurrentDictionary<long, string>();
         static ConcurrentDictionary<string, long> reverseUnitCache =
@@ -34,21 +36,37 @@ namespace LD.Numeric.IdleNumber
                 return cached;
             }
 
+            long index = GetIndexFromUnitUncached(unit.AsSpan());
+            reverseUnitCache[unit] = index;
+
+            return index;
+        }
+
+        internal static long GetIndexFromUnit(ReadOnlySpan<char> unit)
+        {
+            if (unit.IsEmpty)
+                return 0;
+
+            return GetIndexFromUnitUncached(unit);
+        }
+
+        private static long GetIndexFromUnitUncached(ReadOnlySpan<char> unit)
+        {
             long index = 0;
             foreach (char c in unit)
             {
                 // 소문자/공백이 c-'A' 계산을 그대로 타면 쓰레기 지수가 됨 ("1.5a" → 1.5e99)
                 if (c < 'A' || c > 'Z')
                 {
-                    throw new FormatException("알파벳 단위는 대문자 A~Z만 허용됩니다 => " + unit);
+                    throw new FormatException(
+                        "알파벳 단위는 대문자 A~Z만 허용됩니다 => " + unit.ToString()
+                    );
                 }
                 index = index * 26 + (c - 'A' + 1);
             }
 
             // 1-indexed → 0-indexed 변환 (A=1→0, B=2→1, AA=27→26)
             index -= 1;
-
-            reverseUnitCache[unit] = index;
 
             return index;
         }
@@ -65,14 +83,16 @@ namespace LD.Numeric.IdleNumber
                 return cached;
             }
 
-            string unit = "";
+            Span<char> buffer = stackalloc char[MaxUnitLength];
+            int position = buffer.Length;
             long originalIndex = index;
             while (index >= 0)
             {
-                unit = (char)('A' + index % 26) + unit;
+                buffer[--position] = (char)('A' + index % 26);
                 index = index / 26 - 1;
             }
 
+            string unit = buffer.Slice(position).ToString();
             unitCache[originalIndex] = unit;
             reverseUnitCache[unit] = originalIndex;
             return unit;

@@ -8,6 +8,27 @@ namespace LD.Numeric.IdleNumber
     public static class AlphabetConverter
     {
         private const int ExponentUnit = 3;
+        private static readonly string[] FixedPointFormats =
+        {
+            "F0",
+            "F1",
+            "F2",
+            "F3",
+            "F4",
+            "F5",
+            "F6",
+            "F7",
+            "F8",
+            "F9",
+            "F10",
+            "F11",
+            "F12",
+            "F13",
+            "F14",
+            "F15",
+            "F16",
+            "F17",
+        };
 
         /// <summary>
         /// 값의 3자리 단위 지수를 계산합니다.
@@ -66,10 +87,10 @@ namespace LD.Numeric.IdleNumber
                 return double.Parse(str, CultureInfo.InvariantCulture);
 
             string numberPart = str.Substring(0, lastAlphaIndex + 1);
-            string unitPart = str.Substring(lastAlphaIndex + 1);
             double number = double.Parse(numberPart, CultureInfo.InvariantCulture);
             // GetIndexFromUnit은 0-indexed (A=0, B=1, ...) 이므로 +1하여 exponent 계산
-            long exponent = (AlphabetManager.GetIndexFromUnit(unitPart) + 1) * 3;
+            long exponent =
+                (AlphabetManager.GetIndexFromUnit(str.AsSpan(lastAlphaIndex + 1)) + 1) * 3;
             return number * Math.Pow(10, exponent);
         }
 
@@ -105,9 +126,25 @@ namespace LD.Numeric.IdleNumber
                 exponent += ExponentUnit;
             }
             string unit = AlphabetManager.GetAlphabetUnitFromExponent(exponent);
-            return $"{newNumber.ToString($"F{maxDecimalPoint}", CultureInfo.InvariantCulture)}{unit}";
+            return string.Concat(
+                newNumber.ToString(
+                    GetFixedPointFormat(maxDecimalPoint),
+                    CultureInfo.InvariantCulture
+                ),
+                unit
+            );
         }
 
         #endregion
+
+        private static string GetFixedPointFormat(int decimalPlaces)
+        {
+            if ((uint)decimalPlaces < (uint)FixedPointFormats.Length)
+            {
+                return FixedPointFormats[decimalPlaces];
+            }
+
+            return "F" + decimalPlaces.ToString(CultureInfo.InvariantCulture);
+        }
     }
 }

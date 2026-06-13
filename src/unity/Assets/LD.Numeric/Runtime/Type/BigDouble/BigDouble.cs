@@ -88,13 +88,24 @@ namespace LD.Numeric.IdleNumber
                     return NaN;
                 return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
             }
-            if (mantissa >= 1 && mantissa < 10)
+            var absMantissa = Math.Abs(mantissa);
+            if (absMantissa >= 1 && absMantissa < 10)
             {
                 return FromMantissaExponentNoNormalize(mantissa, exponent);
             }
             if (IsZero(mantissa))
             {
                 return Zero;
+            }
+
+            if (absMantissa >= 10 && absMantissa < 100)
+            {
+                return FromMantissaExponentNoNormalize(mantissa / 10, exponent + 1);
+            }
+
+            if (absMantissa >= 0.1 && absMantissa < 1)
+            {
+                return FromMantissaExponentNoNormalize(mantissa * 10, exponent - 1);
             }
 
             long tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
@@ -109,7 +120,7 @@ namespace LD.Numeric.IdleNumber
             }
 
             // subnormal 구간(~1e-323)에선 Log10이 1 어긋나 mantissa가 [1,10)을 벗어남
-            var absMantissa = Math.Abs(mantissa);
+            absMantissa = Math.Abs(mantissa);
             if (absMantissa >= 10)
             {
                 mantissa /= 10;
@@ -509,7 +520,28 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Divide(BigDouble left, BigDouble right)
         {
-            return left * Reciprocate(right);
+            var mantissa = left.Mantissa / right.Mantissa;
+            if (IsZero(right.Mantissa) || IsZero(left.Mantissa) || !IsFinite(mantissa))
+            {
+                return Normalize(mantissa, 0);
+            }
+
+            long newExponent;
+            try
+            {
+                newExponent = checked(left.Exponent - right.Exponent);
+            }
+            catch (OverflowException)
+            {
+                if (IsNaN(left) || IsNaN(right) || double.IsNaN(mantissa))
+                    return NaN;
+
+                if (right.Exponent < 0)
+                    return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
+                return Zero;
+            }
+
+            return Normalize(mantissa, newExponent);
         }
 
         public static BigDouble Reciprocate(BigDouble value)
@@ -843,6 +875,16 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Pow(BigDouble value, long power)
         {
+            if (power == 0)
+            {
+                return One;
+            }
+
+            if (power == 1)
+            {
+                return Normalize(value.Mantissa, value.Exponent);
+            }
+
             if (Is10(value))
             {
                 return Pow10(power);
@@ -1165,13 +1207,13 @@ namespace LD.Numeric.IdleNumber
             BigDouble currentOwned
         )
         {
-            var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
-
             // 비율 1은 고정가라 등비 공식이 성립하지 않음 (log10(1) 나눗셈 → NaN)
             if (priceRatio == BigDouble.One)
             {
-                return BigDouble.Floor(resourcesAvailable / actualStart);
+                return BigDouble.Floor(resourcesAvailable / priceStart);
             }
+
+            var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
             //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
 
@@ -1192,13 +1234,13 @@ namespace LD.Numeric.IdleNumber
             BigDouble currentOwned
         )
         {
-            var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
-
             // 비율 1은 고정가 — 등비 공식은 0/0이 됨
             if (priceRatio == BigDouble.One)
             {
-                return actualStart * numItems;
+                return priceStart * numItems;
             }
+
+            var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
             return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
         }
