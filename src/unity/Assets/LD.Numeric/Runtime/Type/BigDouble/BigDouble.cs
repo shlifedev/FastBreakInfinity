@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using System.Threading;
-using Cysharp.Text;
 using Random = System.Random;
 
 namespace LD.Numeric.IdleNumber
@@ -264,7 +263,9 @@ namespace LD.Numeric.IdleNumber
 
         public string ToStringMantissaExponent()
         {
-            return ZString.Format("{0}e{1}", mantissa, exponent);
+            return mantissa.ToString(CultureInfo.InvariantCulture)
+                + "e"
+                + exponent.ToString(CultureInfo.InvariantCulture);
         }
 
         public override string ToString()
