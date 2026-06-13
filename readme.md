@@ -1,4 +1,4 @@
-# Fast Idle Number
+# FastBreakInfinity
 
 <p align="center">
 <a href="/readme_ko.md">  한국어  </a>
@@ -9,6 +9,18 @@ An extended fork of [BreakInfinity.cs](https://github.com/Razenpok/BreakInfinity
 
 - Significantly reduces CPU time by efficiently calculating double digit counts in environments where decimal precision is not required.
 - Includes an efficient alphabetic conversion process for digit counts.
+
+<details>
+<summary>What is better than BreakInfinity.cs?</summary>
+
+- Optimized for idle-game hot paths instead of general-purpose numeric formatting.
+- Uses a custom `FastDouble` parser to avoid the overhead of `double.Parse` in common save/load paths.
+- Keeps large-number display fast with a narrow formatter tailored to compact idle-game notation.
+- Converts exponent ranges to alphabet units directly, with caching for repeated UI updates.
+- Avoids unnecessary allocations in arithmetic and most conversion paths, keeping GC pressure low.
+- Preserves the familiar `BigDouble` API while focusing the implementation on CPU and memory cost.
+
+</details>
 
 ## Why Fast?
 

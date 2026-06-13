@@ -1,4 +1,4 @@
-# Fast Idle Number
+# FastBreakInfinity
 
 <p align="center">
 <a href="/readme_ko.md">  한국어  </a>
@@ -9,6 +9,18 @@
 
 - 소수점 정밀도가 필요하지 않은 환경에서 double의 자릿수를 효율적으로 계산하여 CPU 시간을 크게 단축했습니다.
 - 자릿수에 대한 효율적인 알파벳 변환 기능도 추가되었습니다.
+
+<details>
+<summary>BreakInfinity.cs보다 나은 핵심</summary>
+
+- 범용 숫자 포맷터보다 방치형 게임의 반복 호출 구간에 맞춰 최적화했습니다.
+- `FastDouble` 파서로 일반적인 저장/로드 경로에서 `double.Parse` 비용을 줄였습니다.
+- 큰 수 표시를 좁은 게임용 표기 방식에 맞춰 처리해 `ToString` 비용을 낮췄습니다.
+- 지수 범위를 알파벳 단위로 직접 변환하고, 반복 UI 갱신을 위해 결과를 캐싱합니다.
+- 산술과 주요 변환 경로에서 불필요한 할당을 줄여 GC 부담을 낮게 유지합니다.
+- 기존 `BigDouble` 사용성을 유지하면서 CPU 시간과 메모리 사용량에 집중했습니다.
+
+</details>
 
 ## 왜 빠른가요?
 
