@@ -200,6 +200,7 @@ Icon?
 
 # dotnet stuff
 project.lock.json
+**/BenchmarkDotNet.Artifacts/
 
 # VS 2015+
 *.vc.vc.opendb

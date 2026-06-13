@@ -16,7 +16,7 @@ namespace LD.Numeric.IdleNumber
 
             double mantissa = 0;
             long exponent = 0;
-            double decimalFactor = 1;
+            int decimalDigits = 0;
             bool isExponent = false;
             bool isExponentNegative = false;
             bool isMantissaNegative = false;
@@ -85,14 +85,10 @@ namespace LD.Numeric.IdleNumber
                 else
                 {
                     hasMantissaDigit = true;
+                    mantissa = mantissa * 10 + digit;
                     if (isDecimal)
                     {
-                        decimalFactor *= 0.1;
-                        mantissa += digit * decimalFactor;
-                    }
-                    else
-                    {
-                        mantissa = mantissa * 10 + digit;
+                        decimalDigits++;
                     }
                 }
             }
@@ -105,6 +101,11 @@ namespace LD.Numeric.IdleNumber
             if (isMantissaNegative)
             {
                 mantissa = -mantissa;
+            }
+
+            if (decimalDigits > 0)
+            {
+                mantissa /= FastDouble.Pow10(decimalDigits);
             }
 
             if (isExponentNegative)

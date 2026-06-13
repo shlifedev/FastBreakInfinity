@@ -41,7 +41,7 @@ namespace LD.Numeric.IdleNumber
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (value.IndexOf('e') != -1 || value.IndexOf('E') != -1)
+            if (ContainsExponentMarker(value))
             {
                 this = new BigDouble(value, eFormat.NumberWithExponent);
             }

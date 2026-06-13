@@ -32,7 +32,7 @@ namespace LD.Numeric.IdleNumber
             1e22,
         };
 
-        private static double Pow10(int exp)
+        internal static double Pow10(int exp)
         {
             if (exp >= 0 && exp < PositivePowersOf10.Length)
                 return PositivePowersOf10[exp];

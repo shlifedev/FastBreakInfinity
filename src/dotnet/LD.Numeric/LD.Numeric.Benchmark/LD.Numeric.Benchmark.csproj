@@ -11,6 +11,9 @@
         <Compile Include="../../../unity/Assets/LD.Numeric/Runtime/**/*.cs">
             <Link>LD.Numeric/Runtime\%(RecursiveDir)%(Filename)%(Extension)</Link>
         </Compile>
+        <Compile Include="ThirdParty/BreakInfinity.BigDouble.cs.txt">
+            <Link>ThirdParty\BreakInfinity.BigDouble.cs</Link>
+        </Compile>
     </ItemGroup>
 
     <ItemGroup>

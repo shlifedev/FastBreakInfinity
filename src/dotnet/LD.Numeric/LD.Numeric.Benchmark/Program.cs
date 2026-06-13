@@ -18,9 +18,10 @@ if (string.IsNullOrWhiteSpace(dotnetCliPath) || !File.Exists(dotnetCliPath))
 
 var toolchain = CsProjCoreToolchain.From(
     new NetCoreAppSettings(
-        targetFrameworkMoniker: "net10.0",
+        targetFrameworkMoniker: Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_TFM")
+            ?? "net10.0",
         runtimeFrameworkVersion: null,
-        name: ".NET 10",
+        name: Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_NAME") ?? ".NET 10",
         customDotNetCliPath: dotnetCliPath,
         packagesPath: null,
         customRuntimePack: null,

@@ -67,8 +67,12 @@ namespace LD.Numeric.IdleNumber
 
             double roundedMantissa = Math.Round(mantissa, FractionalPartAccuracy);
             long mod = ((Exponent % ExponentUnit) + ExponentUnit) % ExponentUnit;
-            double mul = Math.Pow(10, mod);
-            return roundedMantissa * mul;
+            if (mod == 0)
+            {
+                return roundedMantissa;
+            }
+
+            return mod == 1 ? roundedMantissa * 10 : roundedMantissa * 100;
         }
 
         /// <summary>

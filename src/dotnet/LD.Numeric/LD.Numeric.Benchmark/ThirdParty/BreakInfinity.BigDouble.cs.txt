@@ -1,40 +1,45 @@
+﻿#nullable disable
+
 using System;
 using System.Globalization;
-using System.Numerics;
-using System.Threading;
 using Random = System.Random;
 
-namespace LD.Numeric.IdleNumber
+// I'm not sure if there's a "Yes, this is Unity" define symbol
+// (#if UNITY doesn't seem to work). If you happen to know one - please create
+// an issue here https://github.com/Razenpok/BreakInfinity.cs/issues.
+#if UNITY_2017_1_OR_NEWER
+using UnityEngine;
+#endif
+
+namespace BreakInfinity
 {
-    public partial struct BigDouble : IComparable<BigDouble>, IEquatable<BigDouble>
+#if UNITY_2017_1_OR_NEWER
+    [Serializable]
+#endif
+    public struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
     {
         public const double Tolerance = 1e-18;
 
-        // 두 지수가 17 이상 차이나면 덧셈이 무의미하므로 큰 값을 반환
+        //for example: if two exponents are more than 17 apart, consider adding them together pointless, just return the larger one
         private const int MaxSignificantDigits = 17;
 
         private const long ExpLimit = long.MaxValue;
 
-        // Double에서 나타날 수 있는 최대 지수
+        //the largest exponent that can appear in a Double, though not all mantissas are valid here.
         private const long DoubleExpMax = 308;
 
-        // Double에서 나타날 수 있는 최소 지수
+        //The smallest exponent that can appear in a Double, though not all mantissas are valid here.
         private const long DoubleExpMin = -324;
 
-        // 덧셈 정밀도 팩터 (정수 스케일링용)
-        private const double AdditionPrecisionFactor = 1e14;
-        private const int AdditionPrecisionExponent = 14;
-
-        // 수학 상수
-        private const double Ln10 = 2.30258509299404568402; // Math.Log(10)
-        private const double Log2Of10 = 3.32192809488736234787; // Math.Log2(10)
-        private const double Sqrt10 = 3.16227766016838; // Math.Sqrt(10)
-        private const double CubeRoot10 = 2.1544346900318837; // Math.Pow(10, 1.0/3)
-        private const double TwoThirdsPowerOf10 = 4.6415888336127789; // Math.Pow(10, 2.0/3)
-
+#if UNITY_2017_1_OR_NEWER
+        [SerializeField]
         private double mantissa;
-
+        [SerializeField]
         private long exponent;
+#else
+        private double mantissa;
+        private long exponent;
+#endif
 
         // This constructor is used to prevent non-normalized values to be created via constructor.
         // ReSharper disable once UnusedParameter.Local
@@ -82,13 +87,7 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Normalize(double mantissa, long exponent)
         {
-            if (!IsFinite(mantissa))
-            {
-                if (double.IsNaN(mantissa))
-                    return NaN;
-                return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
-            }
-            if (mantissa >= 1 && mantissa < 10)
+            if (mantissa >= 1 && mantissa < 10 || !IsFinite(mantissa))
             {
                 return FromMantissaExponentNoNormalize(mantissa, exponent);
             }
@@ -97,7 +96,7 @@ namespace LD.Numeric.IdleNumber
                 return Zero;
             }
 
-            long tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
+            var tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
             //SAFETY: handle 5e-324, -5e-324 separately
             if (tempExponent == DoubleExpMin)
             {
@@ -108,18 +107,6 @@ namespace LD.Numeric.IdleNumber
                 mantissa = mantissa / PowersOf10.Lookup(tempExponent);
             }
 
-            // subnormal 구간(~1e-323)에선 Log10이 1 어긋나 mantissa가 [1,10)을 벗어남
-            var absMantissa = Math.Abs(mantissa);
-            if (absMantissa >= 10)
-            {
-                mantissa /= 10;
-                tempExponent++;
-            }
-            else if (absMantissa < 1)
-            {
-                mantissa *= 10;
-                tempExponent--;
-            }
             return FromMantissaExponentNoNormalize(mantissa, exponent + tempExponent);
         }
 
@@ -132,34 +119,25 @@ namespace LD.Numeric.IdleNumber
             return new BigDouble(mantissa, exponent, new PrivateConstructorArg());
         }
 
-        public static readonly BigDouble Zero = FromMantissaExponentNoNormalize(0, 0);
+        public static BigDouble Zero = FromMantissaExponentNoNormalize(0, 0);
 
-        public static readonly BigDouble One = FromMantissaExponentNoNormalize(1, 0);
+        public static BigDouble One = FromMantissaExponentNoNormalize(1, 0);
 
-        public static readonly BigDouble NaN = FromMantissaExponentNoNormalize(
-            double.NaN,
-            long.MinValue
-        );
+        public static BigDouble NaN = FromMantissaExponentNoNormalize(double.NaN, long.MinValue);
 
         public static bool IsNaN(BigDouble value)
         {
             return double.IsNaN(value.Mantissa);
         }
 
-        public static readonly BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(
-            double.PositiveInfinity,
-            0
-        );
+        public static BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(double.PositiveInfinity, 0);
 
         public static bool IsPositiveInfinity(BigDouble value)
         {
             return double.IsPositiveInfinity(value.Mantissa);
         }
 
-        public static readonly BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(
-            double.NegativeInfinity,
-            0
-        );
+        public static BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(double.NegativeInfinity, 0);
 
         public static bool IsNegativeInfinity(BigDouble value)
         {
@@ -173,17 +151,12 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Parse(string value)
         {
-            // CompareTo(null)/Equals(null)도 implicit string 변환을 타고 여기로 와서
-            // NRE 대신 명확한 예외를 던지게 한다
-            if (value == null)
+            if (value.IndexOf('e') != -1)
             {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (ContainsExponentMarker(value))
-            {
-                var info = BigValueInfo.ExponentFormatToBigValueInfo(value);
-                return Normalize(info.Mantissa, info.Exponent);
+                var parts = value.Split('e');
+                var mantissa = double.Parse(parts[0], CultureInfo.InvariantCulture);
+                var exponent = long.Parse(parts[1], CultureInfo.InvariantCulture);
+                return Normalize(mantissa, exponent);
             }
 
             if (value == "NaN")
@@ -191,18 +164,13 @@ namespace LD.Numeric.IdleNumber
                 return NaN;
             }
 
-            var result = new BigDouble(FastDouble.ParseDouble(value, FractionalPartAccuracy));
+            var result = new BigDouble(double.Parse(value, CultureInfo.InvariantCulture));
             if (IsNaN(result))
             {
                 throw new Exception("Invalid argument: " + value);
             }
 
             return result;
-        }
-
-        public float ToFloat()
-        {
-            return (float)ToDouble();
         }
 
         public double ToDouble()
@@ -235,79 +203,23 @@ namespace LD.Numeric.IdleNumber
             }
 
             var resultrounded = Math.Round(result);
-            // 절대 임계값(1e-10)만으로는 1e8 이상 정수의 정규화 오차(상대 ~1e-16)를 못 잡아서
-            // 123456789가 123456788.99999999로 돌아옴. 상대 임계값(수 ulp 수준)을 함께 사용
-            if (Math.Abs(resultrounded - result) < Math.Max(1e-10, Math.Abs(result) * 1e-15))
-                return resultrounded;
+            if (Math.Abs(resultrounded - result) < 1e-10) return resultrounded;
             return result;
-        }
-
-        internal string CreateString(int decimalCount)
-        {
-            // AdjustedMantissa의 3자리 단위 보정은 알파벳 표기용이라 음수 지수에 적용하면
-            // 0.5가 500으로 표시됨. 1 미만 값은 double 그대로 출력
-            if (exponent < 0)
-            {
-                return ToDouble().ToString(CultureInfo.InvariantCulture);
-            }
-
-            var (adjustedMantissa, displayExponent) = AdjustedMantissaForDisplay();
-            return CreateString(decimalCount, adjustedMantissa, displayExponent);
-        }
-
-        private static string CreateString(
-            int decimalCount,
-            double adjustedMantissa,
-            long displayExponent
-        )
-        {
-            if (displayExponent < 3)
-            {
-                return adjustedMantissa.OptimizeToString(decimalCount);
-            }
-
-            return adjustedMantissa.OptimizeToString(decimalCount)
-                + AlphabetManager.GetAlphabetUnitFromExponent(displayExponent);
-        }
-
-        public string ToStringMantissaExponent()
-        {
-            return mantissa.ToString(CultureInfo.InvariantCulture)
-                + "e"
-                + exponent.ToString(CultureInfo.InvariantCulture);
         }
 
         public override string ToString()
         {
-            // 1 미만 값은 알파벳 단위/소수 자리 규칙을 적용하지 않고 double 그대로 표시한다.
-            if (exponent < 0)
-            {
-                return ToDouble().ToString(CultureInfo.InvariantCulture);
-            }
+            return BigNumber.FormatBigDouble(this, null, null);
+        }
 
-            var (adjustedMantissa, displayExponent) = AdjustedMantissaForDisplay();
-            var digits = NumberUtility.GetDigits(adjustedMantissa);
-            int decimalCount = 0;
-            switch (digits)
-            {
-                case 0:
-                    decimalCount = 0;
-                    break;
-                case 1:
-                    decimalCount = 2;
-                    break;
-                case 2:
-                    decimalCount = 1;
-                    break;
-                case 3:
-                    decimalCount = 0;
-                    break;
-                default:
-                    break;
-            }
-            if (exponent <= 2 && mantissa > -10 && mantissa < 10)
-                decimalCount = 0;
-            return CreateString(decimalCount, adjustedMantissa, displayExponent);
+        public string ToString(string format)
+        {
+            return BigNumber.FormatBigDouble(this, format, null);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return BigNumber.FormatBigDouble(this, format, formatProvider);
         }
 
         public static BigDouble Abs(BigDouble value)
@@ -447,8 +359,7 @@ namespace LD.Numeric.IdleNumber
                 return left.Mantissa + right.Mantissa;
             }
 
-            BigDouble bigger,
-                smaller;
+            BigDouble bigger, smaller;
             if (left.Exponent >= right.Exponent)
             {
                 bigger = left;
@@ -465,16 +376,12 @@ namespace LD.Numeric.IdleNumber
                 return bigger;
             }
 
-            // 정수로 스케일업 후 연산하여 정밀도 유지 (예: 299 + 18)
+            //have to do this because adding numbers that were once integers but scaled down is imprecise.
+            //Example: 299 + 18
             return Normalize(
-                Math.Round(
-                    AdditionPrecisionFactor * bigger.Mantissa
-                        + AdditionPrecisionFactor
-                            * smaller.Mantissa
-                            * PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)
-                ),
-                bigger.Exponent - AdditionPrecisionExponent
-            );
+                Math.Round(1e14 * bigger.Mantissa + 1e14 * smaller.Mantissa *
+                           PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)),
+                bigger.Exponent - 14);
         }
 
         public static BigDouble Subtract(BigDouble left, BigDouble right)
@@ -485,26 +392,7 @@ namespace LD.Numeric.IdleNumber
         public static BigDouble Multiply(BigDouble left, BigDouble right)
         {
             // 2e3 * 4e5 = (2 * 4)e(3 + 5)
-            // Exponent 오버플로우 방어
-            long newExponent;
-            try
-            {
-                newExponent = checked(left.Exponent + right.Exponent);
-            }
-            catch (OverflowException)
-            {
-                // NaN의 지수는 long.MinValue 센티널이라 여기로 흘러올 수 있음 — Zero로 둔갑 방지
-                if (IsNaN(left) || IsNaN(right))
-                    return NaN;
-
-                // 덧셈 오버플로는 두 지수의 부호가 같을 때만 발생 — 양수 방향이면 Infinity, 음수 방향이면 Zero
-                bool positiveResult = (left.Mantissa > 0) == (right.Mantissa > 0);
-                if (left.Exponent > 0)
-                    return positiveResult ? PositiveInfinity : NegativeInfinity;
-                return Zero;
-            }
-
-            return Normalize(left.Mantissa * right.Mantissa, newExponent);
+            return Normalize(left.Mantissa * right.Mantissa, left.Exponent + right.Exponent);
         }
 
         public static BigDouble Divide(BigDouble left, BigDouble right)
@@ -520,16 +408,6 @@ namespace LD.Numeric.IdleNumber
         public static implicit operator BigDouble(double value)
         {
             return new BigDouble(value);
-        }
-
-        public static implicit operator BigDouble(string value)
-        {
-            return new BigDouble(value);
-        }
-
-        public static explicit operator BigDouble(BigInteger value)
-        {
-            return new BigDouble(value.ToString());
         }
 
         public static implicit operator BigDouble(int value)
@@ -590,7 +468,7 @@ namespace LD.Numeric.IdleNumber
             }
             if (other is BigDouble)
             {
-                return CompareTo((BigDouble)other);
+                return CompareTo((BigDouble) other);
             }
             throw new ArgumentException("The parameter must be a BigDouble.");
         }
@@ -598,14 +476,11 @@ namespace LD.Numeric.IdleNumber
         public int CompareTo(BigDouble other)
         {
             if (
-                IsZero(Mantissa)
-                || IsZero(other.Mantissa)
-                || IsNaN(this)
-                || IsNaN(other)
-                || IsInfinity(this)
-                || IsInfinity(other)
-            )
+                IsZero(Mantissa) || IsZero(other.Mantissa)
+                || IsNaN(this) || IsNaN(other)
+                || IsInfinity(this) || IsInfinity(other))
             {
+                // Let Double handle these cases.
                 return Mantissa.CompareTo(other.Mantissa);
             }
             if (Mantissa > 0 && other.Mantissa < 0)
@@ -623,18 +498,13 @@ namespace LD.Numeric.IdleNumber
                 : Mantissa.CompareTo(other.Mantissa);
         }
 
-        public override bool Equals(object? other)
+        public override bool Equals(object other)
         {
             return other is BigDouble && Equals((BigDouble)other);
         }
 
         public override int GetHashCode()
         {
-            // Equals는 mantissa 0이면 지수를 무시하므로 해시도 지수를 무시해야 계약이 성립
-            if (IsZero(Mantissa))
-            {
-                return 0;
-            }
             unchecked
             {
                 return (Mantissa.GetHashCode() * 397) ^ Exponent.GetHashCode();
@@ -643,13 +513,8 @@ namespace LD.Numeric.IdleNumber
 
         public bool Equals(BigDouble other)
         {
-            return !IsNaN(this)
-                && !IsNaN(other)
-                && (
-                    AreSameInfinity(this, other)
-                    || (IsZero(Mantissa) && IsZero(other.Mantissa))
-                    || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa)
-                );
+            return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
+                || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa));
         }
 
         /// <summary>
@@ -661,12 +526,8 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public bool Equals(BigDouble other, double tolerance)
         {
-            return !IsNaN(this)
-                && !IsNaN(other)
-                && (
-                    AreSameInfinity(this, other)
-                    || Abs(this - other) <= Max(Abs(this), Abs(other)) * tolerance
-                );
+            return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
+                || Abs(this - other) <= Max(Abs(this), Abs(other)) * tolerance);
         }
 
         private static bool AreSameInfinity(BigDouble first, BigDouble second)
@@ -691,23 +552,10 @@ namespace LD.Numeric.IdleNumber
             {
                 return false;
             }
-
-            // Infinity 처리
-            if (IsNegativeInfinity(a))
-                return !IsNegativeInfinity(b); // -Inf < anything except -Inf
-            if (IsPositiveInfinity(b))
-                return !IsPositiveInfinity(a); // anything except +Inf < +Inf
-            if (IsPositiveInfinity(a) || IsNegativeInfinity(b))
-                return false; // +Inf is not < anything, nothing is < -Inf
-
-            if (IsZero(a.Mantissa))
-                return b.Mantissa > 0;
-            if (IsZero(b.Mantissa))
-                return a.Mantissa < 0;
-            if (a.Exponent == b.Exponent)
-                return a.Mantissa < b.Mantissa;
-            if (a.Mantissa > 0)
-                return b.Mantissa > 0 && a.Exponent < b.Exponent;
+            if (IsZero(a.Mantissa)) return b.Mantissa > 0;
+            if (IsZero(b.Mantissa)) return a.Mantissa < 0;
+            if (a.Exponent == b.Exponent) return a.Mantissa < b.Mantissa;
+            if (a.Mantissa > 0) return b.Mantissa > 0 && a.Exponent < b.Exponent;
             return b.Mantissa > 0 || a.Exponent > b.Exponent;
         }
 
@@ -727,35 +575,10 @@ namespace LD.Numeric.IdleNumber
             {
                 return false;
             }
-
-            // Infinity 처리
-            if (IsPositiveInfinity(a))
-                return !IsPositiveInfinity(b); // +Inf > anything except +Inf
-            if (IsNegativeInfinity(b))
-                return !IsNegativeInfinity(a); // anything except -Inf > -Inf
-            if (IsNegativeInfinity(a) || IsPositiveInfinity(b))
-                return false; // -Inf is not > anything, nothing is > +Inf
-
-            if (IsZero(a.Mantissa))
-            {
-                return b.Mantissa < 0;
-            }
-
-            if (IsZero(b.Mantissa))
-            {
-                return a.Mantissa > 0;
-            }
-
-            if (a.Exponent == b.Exponent)
-            {
-                return a.Mantissa > b.Mantissa;
-            }
-
-            if (a.Mantissa > 0)
-            {
-                return b.Mantissa < 0 || a.Exponent > b.Exponent;
-            }
-
+            if (IsZero(a.Mantissa)) return b.Mantissa < 0;
+            if (IsZero(b.Mantissa)) return a.Mantissa > 0;
+            if (a.Exponent == b.Exponent) return a.Mantissa > b.Mantissa;
+            if (a.Mantissa > 0) return b.Mantissa < 0 || a.Exponent > b.Exponent;
             return b.Mantissa < 0 && a.Exponent < b.Exponent;
         }
 
@@ -804,31 +627,30 @@ namespace LD.Numeric.IdleNumber
 
         public static double Log(BigDouble value, double @base)
         {
-            // Math.Log(x, newBase)와 동일하게 base 0/1은 정의되지 않음 (1은 0으로 나누기가 됨)
-            if (IsZero(@base) || @base == 1)
+            if (IsZero(@base))
             {
                 return double.NaN;
             }
 
-            // 대부분의 증분 게임에서 log(number >= 1, base >= 2)이므로 간단히 처리
-            return Ln10 / Math.Log(@base) * Log10(value);
+            //UN-SAFETY: Most incremental game cases are log(number := 1 or greater, base := 2 or greater). We assume this to be true and thus only need to return a number, not a BigDouble, and don't do any other kind of error checking.
+            return 2.30258509299404568402 / Math.Log(@base) * Log10(value);
         }
 
         public static double Log2(BigDouble value)
         {
-            return Log2Of10 * Log10(value);
+            return 3.32192809488736234787 * Log10(value);
         }
 
         public static double Ln(BigDouble value)
         {
-            return Ln10 * Log10(value);
+            return 2.30258509299404568402 * Log10(value);
         }
 
         public static BigDouble Pow10(double power)
         {
             return IsInteger(power)
-                ? Pow10((long)power)
-                : Normalize(Math.Pow(10, power % 1), (long)Math.Truncate(power));
+                ? Pow10((long) power)
+                : Normalize(Math.Pow(10, power % 1), (long) Math.Truncate(power));
         }
 
         public static BigDouble Pow10(long power)
@@ -853,32 +675,10 @@ namespace LD.Numeric.IdleNumber
             {
                 // TODO: This is rather dumb, but works anyway
                 // Power is too big for our mantissa, so we do multiple Pow with smaller powers.
-                // 제곱하는 순간 음수 밑의 부호가 사라지므로 홀수 거듭제곱이면 복원
-                var result = Pow(Pow(value, 2), (double)power / 2);
-                return value.Mantissa < 0 && (power & 1) == 1 ? -result : result;
+                return Pow(Pow(value, 2), (double) power / 2);
             }
 
-            // Exponent 오버플로우 방어
-            long newExponent;
-            try
-            {
-                newExponent = checked(value.Exponent * power);
-            }
-            catch (OverflowException)
-            {
-                // NaN의 지수는 long.MinValue 센티널이라 여기로 흘러올 수 있음 — Zero로 둔갑 방지
-                if (IsNaN(value))
-                    return NaN;
-
-                bool positiveResult = mantissa > 0;
-                bool exponentPositive =
-                    (value.Exponent > 0 && power > 0) || (value.Exponent < 0 && power < 0);
-                if (exponentPositive)
-                    return positiveResult ? PositiveInfinity : NegativeInfinity;
-                return Zero;
-            }
-
-            return Normalize(mantissa, newExponent);
+            return Normalize(mantissa, value.Exponent * power);
         }
 
         public static BigDouble Pow(BigDouble value, double power)
@@ -894,8 +694,7 @@ namespace LD.Numeric.IdleNumber
 
         private static bool Is10(BigDouble value)
         {
-            // Math.Abs 없이는 mantissa가 -1인 -10도 통과해 Pow(-10, n)의 부호가 사라짐
-            return value.Exponent == 1 && Math.Abs(value.Mantissa - 1) < double.Epsilon;
+            return value.Exponent == 1 && value.Mantissa - 1 < double.Epsilon;
         }
 
         private static BigDouble PowInternal(BigDouble value, double other)
@@ -912,7 +711,7 @@ namespace LD.Numeric.IdleNumber
                 newMantissa = Math.Pow(value.Mantissa, other);
                 if (IsFinite(newMantissa))
                 {
-                    return Normalize(newMantissa, (long)temp);
+                    return Normalize(newMantissa, (long) temp);
                 }
             }
 
@@ -923,12 +722,12 @@ namespace LD.Numeric.IdleNumber
             newMantissa = Math.Pow(10, other * Math.Log10(value.Mantissa) + residue);
             if (IsFinite(newMantissa))
             {
-                return Normalize(newMantissa, (long)newexponent);
+                return Normalize(newMantissa, (long) newexponent);
             }
 
             //UN-SAFETY: This should return NaN when mantissa is negative and value is noninteger.
             var result = Pow10(other * AbsLog10(value)); //this is 2x faster and gives same values AFAIK
-            if (Sign(value) == -1 && AreEqual(Math.Abs(other % 2), 1))
+            if (Sign(value) == -1 && AreEqual(other % 2, 1))
             {
                 return -result;
             }
@@ -942,21 +741,7 @@ namespace LD.Numeric.IdleNumber
 
             var n = value.ToDouble() + 1;
 
-            // 결과 지수 log10(n!) ≈ n·(log10 n − log10 e)가 long 범위를 넘으면 표현 불가.
-            // 방치하면 Pow 내부의 double→long 포화 캐스팅이 가짜 유한값을 만들어냄
-            if (
-                double.IsPositiveInfinity(n) || (n > 1 && n * (Math.Log10(n) - 1 / Ln10) > ExpLimit)
-            )
-            {
-                return PositiveInfinity;
-            }
-
-            return Pow(
-                    n
-                        / 2.71828182845904523536
-                        * Math.Sqrt(n * Math.Sinh(1 / n) + 1 / (810 * Math.Pow(n, 6))),
-                    n
-                ) * Math.Sqrt(2 * 3.141592653589793238462 / n);
+            return Pow(n / 2.71828182845904523536 * Math.Sqrt(n * Math.Sinh(1 / n) + 1 / (810 * Math.Pow(n, 6))), n) * Math.Sqrt(2 * 3.141592653589793238462 / n);
         }
 
         public static BigDouble Exp(BigDouble value)
@@ -973,14 +758,11 @@ namespace LD.Numeric.IdleNumber
 
             if (value.Exponent % 2 != 0)
             {
-                // 음수의 mod는 음수이므로 != 0은 '1 또는 -1'을 의미
-                return Normalize(
-                    Math.Sqrt(value.Mantissa) * Sqrt10,
-                    (long)Math.Floor(value.Exponent / 2.0)
-                );
+                // mod of a negative number is negative, so != means '1 or -1'
+                return Normalize(Math.Sqrt(value.Mantissa) * 3.16227766016838, (long) Math.Floor(value.Exponent / 2.0));
             }
 
-            return Normalize(Math.Sqrt(value.Mantissa), (long)Math.Floor(value.Exponent / 2.0));
+            return Normalize(Math.Sqrt(value.Mantissa), (long) Math.Floor(value.Exponent / 2.0));
         }
 
         public static BigDouble Cbrt(BigDouble value)
@@ -995,23 +777,18 @@ namespace LD.Numeric.IdleNumber
 
             var newmantissa = sign * Math.Pow(mantissa, 1 / 3.0);
 
-            // floor(e/3) 분해와 짝을 이루는 나머지는 항상 0..2여야 함 — C#의 %는 음수에서
-            // 음수 나머지를 줘서 10^(1/3)과 10^(2/3) 보정이 서로 뒤바뀌었음 (예: 1e-4)
-            var mod = ((value.Exponent % 3) + 3) % 3;
-            if (mod == 1)
+            var mod = value.Exponent % 3;
+            if (mod == 1 || mod == -1)
             {
-                return Normalize(newmantissa * CubeRoot10, (long)Math.Floor(value.Exponent / 3.0));
+                return Normalize(newmantissa * 2.1544346900318837, (long) Math.Floor(value.Exponent / 3.0));
             }
 
-            if (mod == 2)
+            if (mod != 0)
             {
-                return Normalize(
-                    newmantissa * TwoThirdsPowerOf10,
-                    (long)Math.Floor(value.Exponent / 3.0)
-                );
-            }
+                return Normalize(newmantissa * 4.6415888336127789, (long) Math.Floor(value.Exponent / 3.0));
+            } //mod != 0 at this point means 'mod == 2 || mod == -2'
 
-            return Normalize(newmantissa, (long)Math.Floor(value.Exponent / 3.0));
+            return Normalize(newmantissa, (long) Math.Floor(value.Exponent / 3.0));
         }
 
         public static BigDouble Sinh(BigDouble value)
@@ -1041,8 +818,7 @@ namespace LD.Numeric.IdleNumber
 
         public static double Atanh(BigDouble value)
         {
-            if (Abs(value) >= 1)
-                return double.NaN;
+            if (Abs(value) >= 1) return double.NaN;
             return Ln((value + 1) / (One - value)) / 2;
         }
 
@@ -1066,18 +842,142 @@ namespace LD.Numeric.IdleNumber
             return !double.IsNaN(value) && !double.IsInfinity(value);
         }
 
-        private static bool ContainsExponentMarker(string value)
+        /// <summary>
+        /// The BigNumber class implements methods for formatting and parsing big numeric values.
+        /// </summary>
+        private static class BigNumber
         {
-            for (int i = 0; i < value.Length; i++)
+            public static string FormatBigDouble(BigDouble value, string format, IFormatProvider formatProvider)
             {
-                var c = value[i];
-                if (c == 'e' || c == 'E')
+                if (IsNaN(value)) return "NaN";
+                if (value.Exponent >= ExpLimit)
                 {
-                    return true;
+                    return value.Mantissa > 0 ? "Infinity" : "-Infinity";
                 }
+
+                int formatDigits;
+                var formatSpecifier = ParseFormatSpecifier(format, out formatDigits);
+                switch (formatSpecifier)
+                {
+                    case 'R':
+                    case 'G':
+                        return FormatGeneral(value, formatDigits);
+                    case 'E':
+                        return FormatExponential(value, formatDigits);
+                    case 'F':
+                        return FormatFixed(value, formatDigits);
+                }
+                throw new FormatException($"Unknown string format '{formatSpecifier}'");
             }
 
-            return false;
+            private static char ParseFormatSpecifier(string format, out int digits)
+            {
+                const char customFormat = (char) 0;
+                digits = -1;
+                if (string.IsNullOrEmpty(format))
+                {
+                    return 'R';
+                }
+
+                var i = 0;
+                var ch = format[i];
+                if ((ch < 'A' || ch > 'Z') && (ch < 'a' || ch > 'z'))
+                {
+                    return customFormat;
+                }
+
+                i++;
+                var n = -1;
+
+                if (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                {
+                    n = format[i++] - '0';
+                    while (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                    {
+                        n = n * 10 + (format[i++] - '0');
+                        if (n >= 10)
+                            break;
+                    }
+                }
+
+                if (i < format.Length && format[i] != '\0')
+                {
+                    return customFormat;
+                }
+
+                digits = n;
+                return ch;
+            }
+
+            private static string FormatGeneral(BigDouble value, int places)
+            {
+                if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
+                {
+                    return "0";
+                }
+
+                var format = places > 0 ? $"G{places}" : "G";
+                if (value.Exponent < 21 && value.Exponent > -7)
+                {
+                    return value.ToDouble().ToString(format, CultureInfo.InvariantCulture);
+                }
+
+                return value.Mantissa.ToString(format, CultureInfo.InvariantCulture)
+                       + "E" + (value.Exponent >= 0 ? "+" : "")
+                       + value.Exponent.ToString(CultureInfo.InvariantCulture);
+            }
+
+            private static string ToFixed(double value, int places)
+            {
+                return value.ToString($"F{places}", CultureInfo.InvariantCulture);
+            }
+
+            private static string FormatExponential(BigDouble value, int places)
+            {
+                if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
+                {
+                    return "0" + (places > 0 ? ".".PadRight(places + 1, '0') : "") + "E+0";
+                }
+
+                var len = (places >= 0 ? places : MaxSignificantDigits) + 1;
+                var numDigits = (int)Math.Ceiling(Math.Log10(Math.Abs(value.Mantissa)));
+                var rounded = Math.Round(value.Mantissa * Math.Pow(10, len - numDigits)) * Math.Pow(10, numDigits - len);
+
+                var mantissa = ToFixed(rounded, Math.Max(len - numDigits, 0));
+                if (mantissa != "0" && places < 0)
+                {
+                    mantissa = mantissa.TrimEnd('0', '.');
+                }
+                return mantissa + "E" + (value.Exponent >= 0 ? "+" : "")
+                       + value.Exponent;
+            }
+
+            private static string FormatFixed(BigDouble value, int places)
+            {
+                if (places < 0)
+                {
+                    places = MaxSignificantDigits;
+                }
+                if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
+                {
+                    return "0" + (places > 0 ? ".".PadRight(places + 1, '0') : "");
+                }
+
+                // two cases:
+                // 1) exponent is 17 or greater: just print out mantissa with the appropriate number of zeroes after it
+                // 2) exponent is 16 or less: use basic toFixed
+
+                if (value.Exponent >= MaxSignificantDigits)
+                {
+                    // TODO: StringBuilder-optimizable
+                    return value.Mantissa
+                        .ToString(CultureInfo.InvariantCulture)
+                        .Replace(".", "")
+                        .PadRight((int)value.Exponent + 1, '0')
+                        + (places > 0 ? ".".PadRight(places + 1, '0') : "");
+                }
+                return ToFixed(value.ToDouble(), places);
+            }
         }
 
         /// <summary>
@@ -1093,23 +993,16 @@ namespace LD.Numeric.IdleNumber
 
             static PowersOf10()
             {
-                // FastDouble.ParseDouble은 내부적으로 Math.Pow를 쓰므로 여기서 사용하면
-                // 테이블의 존재 이유가 사라짐. 정확히 반올림된 값을 주는 double.Parse 사용
+                var index = 0;
                 for (var i = 0; i < Powers.Length; i++)
                 {
-                    Powers[i] = double.Parse("1e" + (i - IndexOf0), CultureInfo.InvariantCulture);
+                    Powers[index++] = double.Parse("1e" + (i - IndexOf0), CultureInfo.InvariantCulture);
                 }
             }
 
             public static double Lookup(long power)
             {
-                var index = IndexOf0 + power;
-                if (index < 0 || index >= Powers.Length)
-                {
-                    return Math.Pow(10, power);
-                }
-
-                return Powers[index];
+                return Powers[IndexOf0 + power];
             }
         }
 
@@ -1118,12 +1011,7 @@ namespace LD.Numeric.IdleNumber
 
     public static class BigMath
     {
-        // ThreadLocal로 스레드 안전성 확보
-        private static readonly ThreadLocal<Random> ThreadLocalRandom = new ThreadLocal<Random>(
-            () =>
-                new Random()
-        );
-        private static Random Random => ThreadLocalRandom.Value!;
+        private static readonly Random Random = new Random();
 
         /// <summary>
         /// This doesn't follow any kind of sane random distribution, so use this for testing purposes only.
@@ -1144,9 +1032,7 @@ namespace LD.Numeric.IdleNumber
             }
 
             mantissa *= Math.Sign(Random.NextDouble() * 2 - 1);
-            var exponent = (long)(
-                Math.Floor(Random.NextDouble() * absMaxExponent * 2) - absMaxExponent
-            );
+            var exponent = (long)(Math.Floor(Random.NextDouble() * absMaxExponent * 2) - absMaxExponent);
             return BigDouble.Normalize(mantissa, exponent);
         }
 
@@ -1158,47 +1044,24 @@ namespace LD.Numeric.IdleNumber
         /// Adapted from Trimps source code.
         /// </para>
         /// </summary>
-        public static BigDouble AffordGeometricSeries(
-            BigDouble resourcesAvailable,
-            BigDouble priceStart,
-            BigDouble priceRatio,
-            BigDouble currentOwned
-        )
+        public static BigDouble AffordGeometricSeries(BigDouble resourcesAvailable, BigDouble priceStart,
+            BigDouble priceRatio, BigDouble currentOwned)
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
-            // 비율 1은 고정가라 등비 공식이 성립하지 않음 (log10(1) 나눗셈 → NaN)
-            if (priceRatio == BigDouble.One)
-            {
-                return BigDouble.Floor(resourcesAvailable / actualStart);
-            }
-
             //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
 
-            return BigDouble.Floor(
-                BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1)
-                    / BigDouble.Log10(priceRatio)
-            );
+            return BigDouble.Floor(BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1) / BigDouble.Log10(priceRatio));
         }
 
         /// <summary>
         /// How much resource would it cost to buy (numItems) items if you already have currentOwned,
         /// the initial price is priceStart and it multiplies by priceRatio each purchase?
         /// </summary>
-        public static BigDouble SumGeometricSeries(
-            BigDouble numItems,
-            BigDouble priceStart,
-            BigDouble priceRatio,
-            BigDouble currentOwned
-        )
+        public static BigDouble SumGeometricSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceRatio,
+            BigDouble currentOwned)
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
-
-            // 비율 1은 고정가 — 등비 공식은 0/0이 됨
-            if (priceRatio == BigDouble.One)
-            {
-                return actualStart * numItems;
-            }
 
             return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
         }
@@ -1208,12 +1071,8 @@ namespace LD.Numeric.IdleNumber
         /// additively increasing cost each purchase (start at priceStart, add by priceAdd,
         /// already own currentOwned), how much of it can you buy?
         /// </summary>
-        public static BigDouble AffordArithmeticSeries(
-            BigDouble resourcesAvailable,
-            BigDouble priceStart,
-            BigDouble priceAdd,
-            BigDouble currentOwned
-        )
+        public static BigDouble AffordArithmeticSeries(BigDouble resourcesAvailable, BigDouble priceStart,
+            BigDouble priceAdd, BigDouble currentOwned)
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
@@ -1236,12 +1095,8 @@ namespace LD.Numeric.IdleNumber
         /// Adapted from http://www.mathwords.com/a/arithmetic_series.htm
         /// </para>
         /// </summary>
-        public static BigDouble SumArithmeticSeries(
-            BigDouble numItems,
-            BigDouble priceStart,
-            BigDouble priceAdd,
-            BigDouble currentOwned
-        )
+        public static BigDouble SumArithmeticSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceAdd,
+            BigDouble currentOwned)
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
@@ -1257,11 +1112,7 @@ namespace LD.Numeric.IdleNumber
         /// From Frozen Cookies: http://cookieclicker.wikia.com/wiki/Frozen_Cookies_(JavaScript_Add-on)#Efficiency.3F_What.27s_that.3F
         /// </para>
         /// </summary>
-        public static BigDouble EfficiencyOfPurchase(
-            BigDouble cost,
-            BigDouble currentRpS,
-            BigDouble deltaRpS
-        )
+        public static BigDouble EfficiencyOfPurchase(BigDouble cost, BigDouble currentRpS, BigDouble deltaRpS)
         {
             return cost / currentRpS + cost / deltaRpS;
         }
@@ -1445,9 +1296,7 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static BigDouble AscensionPenalty(this BigDouble value, double ascensions)
         {
-            return Math.Abs(ascensions) < double.Epsilon
-                ? value
-                : BigDouble.Pow(value, Math.Pow(10, -ascensions));
+            return Math.Abs(ascensions) < double.Epsilon ? value : BigDouble.Pow(value, Math.Pow(10, -ascensions));
         }
 
         /// <summary>
