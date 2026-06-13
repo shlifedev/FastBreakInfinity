@@ -12,12 +12,22 @@ namespace LD.Numeric.IdleNumber
                 return 0;
             }
 
-            int digits = 0;
-            int number = Math.Abs((int)value);
-            while (number > 0)
+            value = Math.Abs(value);
+            if (value < 1)
             {
-                number /= 10;
+                return 0;
+            }
+
+            // int 캐스팅은 ±21억 밖에서 포화/크래시 — Log10 기반으로 double 전 범위 처리
+            int digits = (int)Math.Floor(Math.Log10(value)) + 1;
+            // Log10 경계 오차 보정 (예: Log10(1000)이 2.999... 또는 3.000...1로 나오는 경우)
+            if (Math.Pow(10, digits) <= value)
+            {
                 digits++;
+            }
+            else if (Math.Pow(10, digits - 1) > value)
+            {
+                digits--;
             }
 
             return digits;
