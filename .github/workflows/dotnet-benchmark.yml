@@ -1,0 +1,83 @@
+name: .NET Benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: BenchmarkDotNet filter
+        required: false
+        default: "*"
+  schedule:
+    - cron: "0 18 * * 0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BENCHMARK_FILTER: ${{ github.event.inputs.filter || '*' }}
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_CONFIGURATION: Release
+  DOTNET_NOLOGO: "true"
+  DOTNET_WORKING_DIRECTORY: src/dotnet/LD.Numeric
+
+jobs:
+  benchmark:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    defaults:
+      run:
+        working-directory: src/dotnet/LD.Numeric
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: ${{ env.DOTNET_WORKING_DIRECTORY }}/global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/dotnet/LD.Numeric/**/*.csproj', 'src/dotnet/LD.Numeric/global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore LD.Numeric.Benchmark/LD.Numeric.Benchmark.csproj
+
+      - name: Build benchmark project
+        run: >
+          dotnet build LD.Numeric.Benchmark/LD.Numeric.Benchmark.csproj
+          --configuration ${{ env.DOTNET_CONFIGURATION }}
+          --no-restore
+          -warnaserror
+
+      - name: Resolve dotnet host path
+        run: echo "LD_NUMERIC_BENCHMARK_DOTNET=$(command -v dotnet)" >> "$GITHUB_ENV"
+
+      - name: Run benchmarks
+        run: >
+          dotnet run
+          --configuration ${{ env.DOTNET_CONFIGURATION }}
+          --project LD.Numeric.Benchmark/LD.Numeric.Benchmark.csproj
+          --no-build
+          --
+          --filter "${{ env.BENCHMARK_FILTER }}"
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: src/dotnet/LD.Numeric/BenchmarkDotNet.Artifacts/**
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,161 @@
+name: .NET CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_CONFIGURATION: Release
+  DOTNET_NOLOGO: "true"
+  DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: "false"
+  DOTNET_WORKING_DIRECTORY: src/dotnet/LD.Numeric
+
+jobs:
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: ${{ env.DOTNET_WORKING_DIRECTORY }}/global.json
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Check CSharpier formatting
+        run: dotnet csharpier check .
+
+  build-test:
+    name: Build and test (${{ matrix.os }}, ${{ matrix.culture }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            culture: en-US
+            locale: en_US.UTF-8
+          - os: ubuntu-latest
+            culture: ko-KR
+            locale: ko_KR.UTF-8
+          - os: ubuntu-latest
+            culture: tr-TR
+            locale: tr_TR.UTF-8
+          - os: windows-latest
+            culture: en-US
+            locale: en-US
+          - os: macos-latest
+            culture: en-US
+            locale: en_US.UTF-8
+
+    defaults:
+      run:
+        working-directory: src/dotnet/LD.Numeric
+
+    env:
+      DOTNET_CLI_UI_LANGUAGE: ${{ matrix.culture }}
+      LANG: ${{ matrix.locale }}
+      LC_ALL: ${{ matrix.locale }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: ${{ env.DOTNET_WORKING_DIRECTORY }}/global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/dotnet/LD.Numeric/**/*.csproj', 'src/dotnet/LD.Numeric/global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Configure Linux locales
+        if: runner.os == 'Linux'
+        run: |
+          sudo locale-gen en_US.UTF-8 ko_KR.UTF-8 tr_TR.UTF-8
+          sudo update-locale LANG=${{ matrix.locale }}
+
+      - name: Restore
+        run: dotnet restore LD.Numeric.sln
+
+      - name: Build
+        run: dotnet build LD.Numeric.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore -warnaserror
+
+      - name: Test
+        run: >
+          dotnet test LD.Numeric.Test/LD.Numeric.Test.csproj
+          --configuration ${{ env.DOTNET_CONFIGURATION }}
+          --no-build
+          --logger "trx;LogFileName=test-results-${{ matrix.os }}-${{ matrix.culture }}.trx"
+          --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.culture }}
+          path: |
+            src/dotnet/LD.Numeric/TestResults/**/*.trx
+            src/dotnet/LD.Numeric/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  benchmark-build:
+    name: Build benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: src/dotnet/LD.Numeric
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: ${{ env.DOTNET_WORKING_DIRECTORY }}/global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/dotnet/LD.Numeric/**/*.csproj', 'src/dotnet/LD.Numeric/global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore LD.Numeric.Benchmark/LD.Numeric.Benchmark.csproj
+
+      - name: Build benchmark project
+        run: >
+          dotnet build LD.Numeric.Benchmark/LD.Numeric.Benchmark.csproj
+          --configuration ${{ env.DOTNET_CONFIGURATION }}
+          --no-restore
+          -warnaserror
