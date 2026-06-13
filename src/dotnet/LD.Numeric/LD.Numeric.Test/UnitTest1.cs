@@ -14,9 +14,9 @@ public class LegacyTests
     public void FastDoubleDecimalAccur()
     {
         var test = IdleNumber.FastDouble.ParseDouble("1.12345678123", 3);
-        Assert.IsTrue(test.ToString() == "1.123");
+        Assert.That(test, Is.EqualTo(1.123));
         var test2 = IdleNumber.FastDouble.ParseDouble("1.123123123321321123", 9);
-        Assert.IsTrue(test2.ToString() == "1.123123123");
+        Assert.That(test2, Is.EqualTo(1.123123123));
     }
 
     [Test]
