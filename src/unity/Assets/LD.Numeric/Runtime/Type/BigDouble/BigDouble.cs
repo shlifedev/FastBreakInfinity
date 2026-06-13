@@ -108,6 +108,19 @@ namespace LD.Numeric.IdleNumber
             {
                 mantissa = mantissa / PowersOf10.Lookup(tempExponent);
             }
+
+            // subnormal 구간(~1e-323)에선 Log10이 1 어긋나 mantissa가 [1,10)을 벗어남
+            var absMantissa = Math.Abs(mantissa);
+            if (absMantissa >= 10)
+            {
+                mantissa /= 10;
+                tempExponent++;
+            }
+            else if (absMantissa < 1)
+            {
+                mantissa *= 10;
+                tempExponent--;
+            }
             return FromMantissaExponentNoNormalize(mantissa, exponent + tempExponent);
         }
 
@@ -239,15 +252,14 @@ namespace LD.Numeric.IdleNumber
                 return ToDouble().ToString(CultureInfo.InvariantCulture);
             }
 
-            var adjustedMantissa = AdjustedMantissa();
-            adjustedMantissa = Math.Round(adjustedMantissa, 3);
-            if (exponent < 3)
+            var (adjustedMantissa, displayExponent) = AdjustedMantissaForDisplay();
+            if (displayExponent < 3)
             {
                 return adjustedMantissa.OptimizeToString(decimalCount);
             }
 
             return adjustedMantissa.OptimizeToString(decimalCount)
-                + AlphabetManager.GetAlphabetUnitFromExponent(this.exponent);
+                + AlphabetManager.GetAlphabetUnitFromExponent(displayExponent);
         }
 
         public string ToStringMantissaExponent()
@@ -257,8 +269,7 @@ namespace LD.Numeric.IdleNumber
 
         public override string ToString()
         {
-            var adjustedMantissa = AdjustedMantissa();
-            adjustedMantissa = Math.Round(adjustedMantissa, 3);
+            var (adjustedMantissa, _) = AdjustedMantissaForDisplay();
             var digits = NumberUtility.GetDigits(adjustedMantissa);
             int decimalCount = 0;
             switch (digits)
@@ -466,6 +477,10 @@ namespace LD.Numeric.IdleNumber
             }
             catch (OverflowException)
             {
+                // NaN의 지수는 long.MinValue 센티널이라 여기로 흘러올 수 있음 — Zero로 둔갑 방지
+                if (IsNaN(left) || IsNaN(right))
+                    return NaN;
+
                 // 덧셈 오버플로는 두 지수의 부호가 같을 때만 발생 — 양수 방향이면 Infinity, 음수 방향이면 Zero
                 bool positiveResult = (left.Mantissa > 0) == (right.Mantissa > 0);
                 if (left.Exponent > 0)
@@ -599,6 +614,11 @@ namespace LD.Numeric.IdleNumber
 
         public override int GetHashCode()
         {
+            // Equals는 mantissa 0이면 지수를 무시하므로 해시도 지수를 무시해야 계약이 성립
+            if (IsZero(Mantissa))
+            {
+                return 0;
+            }
             unchecked
             {
                 return (Mantissa.GetHashCode() * 397) ^ Exponent.GetHashCode();
@@ -768,7 +788,8 @@ namespace LD.Numeric.IdleNumber
 
         public static double Log(BigDouble value, double @base)
         {
-            if (IsZero(@base))
+            // Math.Log(x, newBase)와 동일하게 base 0/1은 정의되지 않음 (1은 0으로 나누기가 됨)
+            if (IsZero(@base) || @base == 1)
             {
                 return double.NaN;
             }
@@ -816,7 +837,9 @@ namespace LD.Numeric.IdleNumber
             {
                 // TODO: This is rather dumb, but works anyway
                 // Power is too big for our mantissa, so we do multiple Pow with smaller powers.
-                return Pow(Pow(value, 2), (double)power / 2);
+                // 제곱하는 순간 음수 밑의 부호가 사라지므로 홀수 거듭제곱이면 복원
+                var result = Pow(Pow(value, 2), (double)power / 2);
+                return value.Mantissa < 0 && (power & 1) == 1 ? -result : result;
             }
 
             // Exponent 오버플로우 방어
@@ -827,6 +850,10 @@ namespace LD.Numeric.IdleNumber
             }
             catch (OverflowException)
             {
+                // NaN의 지수는 long.MinValue 센티널이라 여기로 흘러올 수 있음 — Zero로 둔갑 방지
+                if (IsNaN(value))
+                    return NaN;
+
                 bool positiveResult = mantissa > 0;
                 bool exponentPositive =
                     (value.Exponent > 0 && power > 0) || (value.Exponent < 0 && power < 0);
@@ -952,15 +979,16 @@ namespace LD.Numeric.IdleNumber
 
             var newmantissa = sign * Math.Pow(mantissa, 1 / 3.0);
 
-            var mod = value.Exponent % 3;
-            if (mod == 1 || mod == -1)
+            // floor(e/3) 분해와 짝을 이루는 나머지는 항상 0..2여야 함 — C#의 %는 음수에서
+            // 음수 나머지를 줘서 10^(1/3)과 10^(2/3) 보정이 서로 뒤바뀌었음 (예: 1e-4)
+            var mod = ((value.Exponent % 3) + 3) % 3;
+            if (mod == 1)
             {
                 return Normalize(newmantissa * CubeRoot10, (long)Math.Floor(value.Exponent / 3.0));
             }
 
-            if (mod != 0)
+            if (mod == 2)
             {
-                // mod != 0 여기서는 'mod == 2 || mod == -2'를 의미
                 return Normalize(
                     newmantissa * TwoThirdsPowerOf10,
                     (long)Math.Floor(value.Exponent / 3.0)

@@ -59,10 +59,32 @@ namespace LD.Numeric.IdleNumber
         /// <returns></returns>
         public double AdjustedMantissa()
         {
+            // 음수 지수엔 알파벳 단위가 없음 — 3자리 보정을 적용하면 0.5가 500이 됨
+            if (Exponent < 0)
+            {
+                return ToDouble();
+            }
+
             double roundedMantissa = Math.Round(mantissa, FractionalPartAccuracy);
             long mod = ((Exponent % ExponentUnit) + ExponentUnit) % ExponentUnit;
             double mul = Math.Pow(10, mod);
             return roundedMantissa * mul;
+        }
+
+        /// <summary>
+        /// 표시용 (가수, 지수) 쌍. 반올림이 단위 경계(1000)에 도달하면 단위를 한 칸 올린다.
+        /// (예: 9.999999e23 → 가수 1000이 아니라 가수 1 + 지수 26)
+        /// </summary>
+        private (double mantissa, long exponent) AdjustedMantissaForDisplay()
+        {
+            var adjusted = Math.Round(AdjustedMantissa(), 3);
+            var displayExponent = exponent;
+            if (adjusted >= 1000 || adjusted <= -1000)
+            {
+                adjusted /= 1000;
+                displayExponent += ExponentUnit;
+            }
+            return (adjusted, displayExponent);
         }
     }
 }
