@@ -85,12 +85,25 @@ namespace LD.Numeric.IdleNumber
 
         public static string ConvertToAlphabetUnit(this double number, int maxDecimalPoint = 2)
         {
+            if (double.IsNaN(number) || double.IsInfinity(number))
+                return number.ToString(CultureInfo.InvariantCulture);
+
+            // 음수는 절대값 기준으로 단위를 붙이고 부호를 복원 (기존엔 단위가 아예 안 붙었음)
+            if (number < 0)
+                return "-" + ConvertToAlphabetUnit(-number, maxDecimalPoint);
+
             if (number < 1000)
                 return number.ToString(CultureInfo.InvariantCulture);
 
             long exponent = GetExponent(number);
             double divisor = Math.Pow(10, exponent);
-            double newNumber = number / divisor;
+            double newNumber = Math.Round(number / divisor, maxDecimalPoint);
+            // 반올림이 단위 경계(1000)에 도달하면 단위를 한 칸 올림 (999999 → 1.00B)
+            if (newNumber >= 1000)
+            {
+                newNumber /= 1000;
+                exponent += ExponentUnit;
+            }
             string unit = AlphabetManager.GetAlphabetUnitFromExponent(exponent);
             return $"{newNumber.ToString($"F{maxDecimalPoint}", CultureInfo.InvariantCulture)}{unit}";
         }
