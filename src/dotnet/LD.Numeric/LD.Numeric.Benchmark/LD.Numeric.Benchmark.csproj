@@ -4,6 +4,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>12</LangVersion>
         <OutputType>Exe</OutputType>
+        <Optimize>true</Optimize>
     </PropertyGroup>
 
     <ItemGroup>

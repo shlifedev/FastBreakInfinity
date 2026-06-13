@@ -101,9 +101,10 @@ public class ComparisonTests
     public void Comparison_SpecialValues_NaN()
     {
         BigDouble nan = BigDouble.NaN;
+        BigDouble sameNan = BigDouble.NaN;
         BigDouble normal = new BigDouble(1.0, 100);
 
-        Assert.That(nan == nan, Is.False, "NaN == NaN should be false");
+        Assert.That(nan == sameNan, Is.False, "NaN == NaN should be false");
         Assert.That(nan < normal, Is.False, "NaN < normal should be false");
         Assert.That(nan > normal, Is.False, "NaN > normal should be false");
         Assert.That(nan <= normal, Is.False, "NaN <= normal should be false");

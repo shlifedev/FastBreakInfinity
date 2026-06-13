@@ -45,7 +45,7 @@ public class Renderer
             }
 
             AppendLine(
-                $"[{i + 1}] {generator.Name,-6} 보유 {generator.Owned,-8} "
+                $"[{i + 1}] {generator.Name, -6} 보유 {generator.Owned, -8} "
                     + $"생산 {generator.ProductionPerSecond}/s  {priceText}"
             );
         }

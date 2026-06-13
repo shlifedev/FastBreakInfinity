@@ -52,7 +52,7 @@ public class FastDoubleReviewTests
     {
         // 기존 호환 동작 유지
         Assert.That(FastDouble.ParseDouble(""), Is.EqualTo(0));
-        Assert.That(FastDouble.ParseDouble(null), Is.EqualTo(0));
+        Assert.That(FastDouble.ParseDouble((string)null!), Is.EqualTo(0));
     }
 
     // ===== F3: OptimizeToString(0)이 culture 의존적인 느린 표준 포맷터를 타던 문제 =====

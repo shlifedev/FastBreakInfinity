@@ -10,8 +10,11 @@ public class BigDoubleBenchmarks
     private BigDouble _medium;
     private BigDouble _large;
     private BigDouble _veryLarge;
+    private BigDouble _roundingCarry;
 
+    private string _plainString = null!;
     private string _mediumString = null!;
+    private string _longExponentString = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -20,8 +23,11 @@ public class BigDoubleBenchmarks
         _medium = new BigDouble(1.5, 10);
         _large = new BigDouble(9.999, 100);
         _veryLarge = new BigDouble(5.5, 1000);
+        _roundingCarry = new BigDouble("9.999999e23");
 
+        _plainString = "123456789.123456";
         _mediumString = "1.5e10";
+        _longExponentString = "1.0000000000001e999999999";
     }
 
     #region Constructors
@@ -38,6 +44,20 @@ public class BigDoubleBenchmarks
     public BigDouble Constructor_FromString()
     {
         return BigDouble.Parse(_mediumString);
+    }
+
+    [BenchmarkCategory("Constructor")]
+    [Benchmark]
+    public BigDouble Constructor_FromPlainString()
+    {
+        return BigDouble.Parse(_plainString);
+    }
+
+    [BenchmarkCategory("Constructor")]
+    [Benchmark]
+    public BigDouble Constructor_FromLongExponentString()
+    {
+        return BigDouble.Parse(_longExponentString);
     }
 
     [BenchmarkCategory("Constructor")]
@@ -183,6 +203,27 @@ public class BigDoubleBenchmarks
 
     [BenchmarkCategory("Math")]
     [Benchmark]
+    public BigDouble Math_Sinh()
+    {
+        return BigDouble.Sinh(_small);
+    }
+
+    [BenchmarkCategory("Math")]
+    [Benchmark]
+    public BigDouble Math_Cosh()
+    {
+        return BigDouble.Cosh(_small);
+    }
+
+    [BenchmarkCategory("Math")]
+    [Benchmark]
+    public BigDouble Math_Tanh()
+    {
+        return BigDouble.Tanh(_small);
+    }
+
+    [BenchmarkCategory("Math")]
+    [Benchmark]
     public BigDouble Math_Factorial()
     {
         return BigDouble.Factorial(100);
@@ -236,6 +277,20 @@ public class BigDoubleBenchmarks
     public bool Comparison_Equals()
     {
         return _medium == _large;
+    }
+
+    [BenchmarkCategory("Comparison")]
+    [Benchmark]
+    public bool Comparison_Equals_Tolerance()
+    {
+        return _medium.Equals(_large, 1e-9);
+    }
+
+    [BenchmarkCategory("Comparison")]
+    [Benchmark]
+    public int Comparison_GetHashCode()
+    {
+        return _medium.GetHashCode();
     }
 
     [BenchmarkCategory("Comparison")]
@@ -300,9 +355,30 @@ public class BigDoubleBenchmarks
 
     [BenchmarkCategory("Conversion")]
     [Benchmark]
+    public string Conversion_ToString_RoundingCarry()
+    {
+        return _roundingCarry.ToString();
+    }
+
+    [BenchmarkCategory("Conversion")]
+    [Benchmark]
+    public string Conversion_ToStringMantissaExponent()
+    {
+        return _veryLarge.ToStringMantissaExponent();
+    }
+
+    [BenchmarkCategory("Conversion")]
+    [Benchmark]
     public double Conversion_ToDouble()
     {
         return _medium.ToDouble();
+    }
+
+    [BenchmarkCategory("Conversion")]
+    [Benchmark]
+    public float Conversion_ToFloat()
+    {
+        return _medium.ToFloat();
     }
 
     [BenchmarkCategory("Conversion")]
@@ -324,6 +400,27 @@ public class BigDoubleBenchmarks
     public string Conversion_GetAlphabetUnit_Large()
     {
         return BigDouble.GetAlphabetUnit(1000);
+    }
+
+    [BenchmarkCategory("Conversion")]
+    [Benchmark]
+    public (long rangeA, long rangeB) Conversion_GetExponentFromAlphabetUnit()
+    {
+        return BigDouble.GetExponentFromAlphabetUnit("AA");
+    }
+
+    [BenchmarkCategory("Conversion")]
+    [Benchmark]
+    public long Conversion_GetNumberFromUnitName()
+    {
+        return BigDouble.GetNumberFromUnitName("AA");
+    }
+
+    [BenchmarkCategory("Conversion")]
+    [Benchmark]
+    public long Conversion_GetExponentFromUnitName()
+    {
+        return BigDouble.GetExponentFromUnitName("AA");
     }
 
     #endregion

@@ -607,7 +607,7 @@ namespace LD.Numeric.IdleNumber
                 : Mantissa.CompareTo(other.Mantissa);
         }
 
-        public override bool Equals(object other)
+        public override bool Equals(object? other)
         {
             return other is BigDouble && Equals((BigDouble)other);
         }
@@ -1093,7 +1093,7 @@ namespace LD.Numeric.IdleNumber
             () =>
                 new Random()
         );
-        private static Random Random => ThreadLocalRandom.Value;
+        private static Random Random => ThreadLocalRandom.Value!;
 
         /// <summary>
         /// This doesn't follow any kind of sane random distribution, so use this for testing purposes only.

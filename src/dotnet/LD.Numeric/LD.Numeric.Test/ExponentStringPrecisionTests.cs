@@ -19,9 +19,6 @@ public class ExponentStringPrecisionTests
         BigDouble a = new BigDouble("10e9");
         BigDouble b = new BigDouble("1e10");
 
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
-
         Assert.That(a == b, Is.True, "10e9 == 1e10");
         Assert.That(a.Equals(b), Is.True);
     }
@@ -47,10 +44,6 @@ public class ExponentStringPrecisionTests
         BigDouble a = new BigDouble("11.23123123e9");
         BigDouble b = new BigDouble("1.123123123e10");
 
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
-        Console.WriteLine($"diff: {Math.Abs(a.Mantissa - b.Mantissa):E}");
-
         // 부동소수점 오차로 인해 미세하게 다를 수 있음
         // 이것은 버그가 아니라 double의 한계
         double diff = Math.Abs(a.Mantissa - b.Mantissa);
@@ -66,9 +59,6 @@ public class ExponentStringPrecisionTests
         BigDouble a = new BigDouble("1.3333192919230e100");
         BigDouble b = new BigDouble("1.3333192919231e100");
 
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
-
         Assert.That(a == b, Is.False, "마지막 자리 다름");
         Assert.That(a < b, Is.True);
     }
@@ -79,9 +69,6 @@ public class ExponentStringPrecisionTests
         // 다른 지수로 표현된 미세한 차이
         BigDouble a = new BigDouble("13.333192919230e99"); // 1.3333192919230e100
         BigDouble b = new BigDouble("1.3333192919231e100"); // 1.3333192919231e100
-
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
 
         Assert.That(a == b, Is.False, "다른 지수 표현도 미세 차이 감지");
         Assert.That(a < b, Is.True);
@@ -103,18 +90,9 @@ public class ExponentStringPrecisionTests
         BigDouble a = new BigDouble("1.00000000000000e100");
         BigDouble b = new BigDouble("1.00000000000001e100");
 
-        Console.WriteLine($"a: {a.Mantissa:R}");
-        Console.WriteLine($"b: {b.Mantissa:R}");
-
-        if (a.Mantissa != b.Mantissa)
-        {
-            Assert.That(a == b, Is.False, "15번째 자리 차이");
-            Assert.That(a < b, Is.True);
-        }
-        else
-        {
-            Assert.Pass("파서 정밀도 한계");
-        }
+        Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa));
+        Assert.That(a == b, Is.False, "15번째 자리 차이");
+        Assert.That(a < b, Is.True);
     }
 
     // ===== 비교 연산자 테스트 (지수 표기법) =====
@@ -181,14 +159,9 @@ public class ExponentStringPrecisionTests
             BigDouble a = new BigDouble(s1);
             BigDouble b = new BigDouble(s2);
 
-            Console.WriteLine($"{s1} vs {s2}");
-            Console.WriteLine($"  a: {a.Mantissa:R}, b: {b.Mantissa:R}");
-
-            if (a.Mantissa != b.Mantissa)
-            {
-                Assert.That(a == b, Is.False, $"{s1} != {s2}");
-                Assert.That(a < b, Is.True, $"{s1} < {s2}");
-            }
+            Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa), $"{s1} vs {s2}");
+            Assert.That(a == b, Is.False, $"{s1} != {s2}");
+            Assert.That(a < b, Is.True, $"{s1} < {s2}");
         }
     }
 
@@ -198,9 +171,6 @@ public class ExponentStringPrecisionTests
         // 다른 지수 표기로 극미세 차이
         BigDouble a = new BigDouble("10.00000000000000e99"); // 1.0e100
         BigDouble b = new BigDouble("1.000000000000001e100"); // 1.000000000000001e100
-
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
 
         Assert.That(a == b, Is.False, "다른 지수 표기 극미세 차이");
         Assert.That(a < b, Is.True);
@@ -257,9 +227,6 @@ public class ExponentStringPrecisionTests
         BigDouble a = new BigDouble("1.123456789e100");
         BigDouble b = new BigDouble(1.123456789, 100);
 
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
-
         Assert.That(a == b, Is.True, "문자열 vs 생성자 같은 값");
     }
 
@@ -270,18 +237,9 @@ public class ExponentStringPrecisionTests
         BigDouble a = new BigDouble("1.123456789012345e100");
         BigDouble b = new BigDouble(1.123456789012346, 100);
 
-        Console.WriteLine($"a: {a.Mantissa:R}");
-        Console.WriteLine($"b: {b.Mantissa:R}");
-
-        if (a.Mantissa != b.Mantissa)
-        {
-            Assert.That(a == b, Is.False, "혼합 생성자 미세 차이");
-            Assert.That(a < b, Is.True);
-        }
-        else
-        {
-            Assert.Pass("파서/생성자 정밀도 차이");
-        }
+        Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa));
+        Assert.That(a == b, Is.False, "혼합 생성자 미세 차이");
+        Assert.That(a < b, Is.True);
     }
 
     // ===== 게임 시나리오 테스트 =====
@@ -306,11 +264,6 @@ public class ExponentStringPrecisionTests
         BigDouble expected = new BigDouble("3.1e50");
 
         BigDouble actual = baseDamage * multiplier;
-
-        Console.WriteLine($"baseDamage: {baseDamage.Mantissa:R}e{baseDamage.Exponent}");
-        Console.WriteLine($"multiplier: {multiplier.Mantissa:R}e{multiplier.Exponent}");
-        Console.WriteLine($"actual: {actual.Mantissa:R}e{actual.Exponent}");
-        Console.WriteLine($"expected: {expected.Mantissa:R}e{expected.Exponent}");
 
         Assert.That(actual == expected, Is.True, "15.5e49 * 2 = 3.1e50");
     }
@@ -352,12 +305,8 @@ public class ExponentStringPrecisionTests
         BigDouble c = new BigDouble("1e100");
         BigDouble d = new BigDouble("0.1e101");
 
-        Console.WriteLine($"c: {c.Mantissa:R}e{c.Exponent}");
-        Console.WriteLine($"d: {d.Mantissa:R}e{d.Exponent}");
-
         // 0.1 * 10 = 1.0 이지만 부동소수점 오차 가능
         double diff = Math.Abs(c.Mantissa - d.Mantissa);
-        Console.WriteLine($"diff: {diff:E}");
 
         // 오차가 매우 작아야 함 (1e-15 미만)
         Assert.That(diff < 1e-14, Is.True, "정규화 오차 확인");
@@ -383,10 +332,6 @@ public class ExponentStringPrecisionTests
         BigDouble b = new BigDouble("1.3333192919230e100"); // 1.3333192919230e100
 
         int compare = a.CompareTo(b);
-
-        Console.WriteLine($"a: {a.Mantissa:R}e{a.Exponent}");
-        Console.WriteLine($"b: {b.Mantissa:R}e{b.Exponent}");
-        Console.WriteLine($"CompareTo: {compare}");
 
         Assert.That(compare > 0, Is.True, "a > b이면 CompareTo > 0");
         Assert.That(a > b, Is.True);

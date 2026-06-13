@@ -10,20 +10,15 @@ public class EdgeCaseTests
     // ===== AdjustedMantissa 테스트 =====
 
     [Test]
-    public void AdjustedMantissa_SideEffect()
+    public void AdjustedMantissa_DoesNotMutateOriginalValue()
     {
-        // AdjustedMantissa가 내부적으로 mantissa를 수정하는 문제 확인
         BigDouble original = new BigDouble(1.23456789, 100);
         double originalMantissa = original.Mantissa;
 
         double adjusted = original.AdjustedMantissa();
 
-        Console.WriteLine($"Original mantissa before: {originalMantissa}");
-        Console.WriteLine($"Original mantissa after: {original.Mantissa}");
-        Console.WriteLine($"Adjusted mantissa: {adjusted}");
-
-        // 주의: 현재 구현에서 mantissa가 Round(mantissa, 6)으로 수정됨
-        // 이것이 의도된 동작인지 버그인지 확인 필요
+        Assert.That(original.Mantissa, Is.EqualTo(originalMantissa));
+        Assert.That(adjusted, Is.EqualTo(12.34568).Within(1e-12));
     }
 
     [Test]
@@ -44,7 +39,7 @@ public class EdgeCaseTests
     {
         BigDouble bd = new BigDouble(1.0, long.MaxValue - 1);
 
-        Assert.That(bd.Exponent == long.MaxValue - 1, Is.True);
+        Assert.That(bd.Exponent, Is.EqualTo(long.MaxValue - 1));
     }
 
     [Test]
@@ -52,23 +47,21 @@ public class EdgeCaseTests
     {
         BigDouble bd = new BigDouble(1.0, long.MinValue + 1);
 
-        Assert.That(!BigDouble.IsNaN(bd), Is.True);
+        Assert.That(BigDouble.IsNaN(bd), Is.False);
+        Assert.That(bd.Exponent, Is.EqualTo(long.MinValue + 1));
     }
 
     [Test]
     public void EdgeCase_DoublePrecisionLimit()
     {
-        BigDouble a = new BigDouble(1.0000000000000001, 100);
-        BigDouble b = new BigDouble(1.0000000000000002, 100);
+        double one = 1.0;
+        double nextUp = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(one) + 1);
+        BigDouble a = new BigDouble(one, 100);
+        BigDouble b = new BigDouble(nextUp, 100);
 
-        Console.WriteLine($"a.Mantissa: {a.Mantissa:R}");
-        Console.WriteLine($"b.Mantissa: {b.Mantissa:R}");
-
-        // double 정밀도 한계로 같을 수 있음
-        if (a.Mantissa != b.Mantissa)
-        {
-            Assert.That(a != b, Is.True);
-        }
+        Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa));
+        Assert.That(a != b, Is.True);
+        Assert.That(a < b, Is.True);
     }
 
     [Test]
@@ -76,8 +69,10 @@ public class EdgeCaseTests
     {
         BigDouble bd = new BigDouble(double.Epsilon, 0);
 
-        Console.WriteLine($"Epsilon: {bd.Mantissa}e{bd.Exponent}");
-        Assert.That(!BigDouble.IsNaN(bd), Is.True);
-        Assert.That(!BigDouble.IsInfinity(bd), Is.True);
+        Assert.That(BigDouble.IsNaN(bd), Is.False);
+        Assert.That(BigDouble.IsInfinity(bd), Is.False);
+        Assert.That(bd.Mantissa, Is.EqualTo(5.0));
+        Assert.That(bd.Exponent, Is.EqualTo(-324));
+        Assert.That(bd.ToDouble(), Is.EqualTo(double.Epsilon));
     }
 }

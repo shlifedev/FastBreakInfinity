@@ -100,8 +100,9 @@ public class NormalizeParseTests
         BigDouble a = new BigDouble("1.123456789e100");
         BigDouble b = new BigDouble("1.123456e100");
 
-        // 정밀도 제한 확인용 테스트
-        // 결과는 구현에 따라 다를 수 있음
-        Assert.Pass("정밀도 제한 테스트 완료");
+        Assert.That(a.Exponent, Is.EqualTo(100));
+        Assert.That(b.Exponent, Is.EqualTo(100));
+        Assert.That(a.Mantissa, Is.GreaterThan(b.Mantissa));
+        Assert.That(a == b, Is.False);
     }
 }

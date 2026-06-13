@@ -8,6 +8,11 @@ namespace LD.Numeric.Test;
 /// </summary>
 public class PrecisionTests
 {
+    private static double NextUp(double value)
+    {
+        return BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(value) + 1);
+    }
+
     // ===== 미세한 차이 동등성 테스트 =====
 
     [Test]
@@ -109,9 +114,6 @@ public class PrecisionTests
         BigDouble a = new BigDouble(1.0, 100);
         BigDouble b = new BigDouble(1.0 + 1e-15, 100); // 1e-15 차이 (표현 가능)
 
-        Console.WriteLine($"a.Mantissa: {a.Mantissa:R}");
-        Console.WriteLine($"b.Mantissa: {b.Mantissa:R}");
-
         // 1e-15 > 1e-18 (Tolerance)이므로 다르게 판정되어야 함
         Assert.That(a == b, Is.False, "1e-15 차이는 다르게 판정");
     }
@@ -121,16 +123,12 @@ public class PrecisionTests
     {
         // Tolerance(1e-18) 미만 차이는 같다고 판정될 수 있음
         BigDouble a = new BigDouble(1.0, 100);
+        double roundedMantissa = 1.0 + 1e-19;
         BigDouble b = new BigDouble(1.0 + 1e-19, 100); // 1e-19 차이
 
-        // 1e-19 < 1e-18 (Tolerance)이므로 같다고 판정
-        // 단, double 정밀도 한계로 실제로 같은 값이 될 수 있음
-        Console.WriteLine($"a mantissa: {a.Mantissa:R}");
-        Console.WriteLine($"b mantissa: {b.Mantissa:R}");
-        Console.WriteLine($"difference: {Math.Abs(a.Mantissa - b.Mantissa):E}");
-
-        // double 정밀도 한계로 1e-19 차이는 표현 불가능할 수 있음
-        Assert.Pass("Tolerance 미만은 double 정밀도 한계");
+        Assert.That(roundedMantissa, Is.EqualTo(1.0), "1e-19 차이는 double로 표현되지 않음");
+        Assert.That(a.Mantissa, Is.EqualTo(b.Mantissa));
+        Assert.That(a == b, Is.True);
     }
 
     // ===== 실제 게임 시나리오 =====
@@ -216,19 +214,9 @@ public class PrecisionTests
         BigDouble a = new BigDouble(1.0000000000000000, 100);
         BigDouble b = new BigDouble(1.0000000000000002, 100); // 마지막 자리 2
 
-        Console.WriteLine($"a: {a.Mantissa:R}, b: {b.Mantissa:R}");
-        Console.WriteLine($"diff: {Math.Abs(a.Mantissa - b.Mantissa):E}");
-
-        // double로 표현 가능하면 다르게 판정되어야 함
-        if (a.Mantissa != b.Mantissa)
-        {
-            Assert.That(a == b, Is.False, "16번째 자리 차이 감지");
-            Assert.That(a < b, Is.True);
-        }
-        else
-        {
-            Assert.Pass("double 정밀도 한계로 같은 값");
-        }
+        Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa));
+        Assert.That(a == b, Is.False, "16번째 자리 차이 감지");
+        Assert.That(a < b, Is.True);
     }
 
     [Test]
@@ -237,9 +225,6 @@ public class PrecisionTests
         // 15번째 유효숫자 차이
         BigDouble a = new BigDouble(1.00000000000000, 100);
         BigDouble b = new BigDouble(1.00000000000001, 100);
-
-        Console.WriteLine($"a: {a.Mantissa:R}, b: {b.Mantissa:R}");
-        Console.WriteLine($"diff: {Math.Abs(a.Mantissa - b.Mantissa):E}");
 
         Assert.That(a == b, Is.False, "15번째 자리 차이 감지");
         Assert.That(a < b, Is.True);
@@ -274,10 +259,10 @@ public class PrecisionTests
         // 다양한 mantissa에서 미세 차이
         var testCases = new[]
         {
-            (1.234567890123456, 1.234567890123457),
-            (9.999999999999998, 9.999999999999999),
-            (1.111111111111111, 1.111111111111112),
-            (5.555555555555555, 5.555555555555556),
+            (1.234567890123456, NextUp(1.234567890123456)),
+            (9.999999999999998, NextUp(9.999999999999998)),
+            (1.111111111111111, NextUp(1.111111111111111)),
+            (5.555555555555555, NextUp(5.555555555555555)),
         };
 
         foreach (var (m1, m2) in testCases)
@@ -285,13 +270,9 @@ public class PrecisionTests
             BigDouble a = new BigDouble(m1, 100);
             BigDouble b = new BigDouble(m2, 100);
 
-            Console.WriteLine($"{m1:R} vs {m2:R}, diff: {Math.Abs(m1 - m2):E}");
-
-            if (a.Mantissa != b.Mantissa)
-            {
-                Assert.That(a == b, Is.False, $"{m1} != {m2}");
-                Assert.That(a < b, Is.True, $"{m1} < {m2}");
-            }
+            Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa), $"{m1:R} vs {m2:R}");
+            Assert.That(a == b, Is.False, $"{m1} != {m2}");
+            Assert.That(a < b, Is.True, $"{m1} < {m2}");
         }
     }
 
@@ -300,14 +281,10 @@ public class PrecisionTests
     {
         // 1 근처에서 가장 작은 표현 가능한 차이
         double one = 1.0;
-        double nextUp = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(one) + 1);
+        double nextUp = NextUp(one);
 
         BigDouble a = new BigDouble(one, 100);
         BigDouble b = new BigDouble(nextUp, 100);
-
-        Console.WriteLine($"one: {one:R}");
-        Console.WriteLine($"nextUp: {nextUp:R}");
-        Console.WriteLine($"diff: {nextUp - one:E}");
 
         Assert.That(a == b, Is.False, "1비트 차이도 감지");
         Assert.That(a < b, Is.True);
@@ -320,17 +297,9 @@ public class PrecisionTests
         BigDouble a = new BigDouble("1.234567890123456e100");
         BigDouble b = new BigDouble("1.234567890123457e100");
 
-        Console.WriteLine($"a: {a.Mantissa:R}, b: {b.Mantissa:R}");
-
-        if (a.Mantissa != b.Mantissa)
-        {
-            Assert.That(a == b, Is.False, "문자열 파싱 극미세 차이");
-            Assert.That(a < b, Is.True);
-        }
-        else
-        {
-            Assert.Pass("파서 정밀도 한계");
-        }
+        Assert.That(a.Mantissa, Is.Not.EqualTo(b.Mantissa));
+        Assert.That(a == b, Is.False, "문자열 파싱 극미세 차이");
+        Assert.That(a < b, Is.True);
     }
 
     [Test]
@@ -401,9 +370,6 @@ public class PrecisionTests
 
         BigDouble sum_a = a + new BigDouble(1, 100);
         BigDouble sum_b = b + new BigDouble(1, 100);
-
-        Console.WriteLine($"sum_a: {sum_a.Mantissa:R}");
-        Console.WriteLine($"sum_b: {sum_b.Mantissa:R}");
 
         // 1e-11 정도 차이는 덧셈 후에도 유지되어야 함
         Assert.That(sum_a == sum_b, Is.False, "덧셈 후 차이 유지");

@@ -111,7 +111,8 @@ public class ConversionTests
     {
         // 캐스트 없는 null 리터럴은 implicit string→BigDouble 변환을 타는 오버로드로 해석됨.
         // NRE 대신 ArgumentNullException이 나와야 함. object로 캐스트하면 CompareTo(object)로 감.
-        Assert.Throws<ArgumentNullException>(() => new BigDouble(5).CompareTo(null));
+        string? nullString = null;
+        Assert.Throws<ArgumentNullException>(() => new BigDouble(5).CompareTo(nullString!));
     }
 
     // ===== ToDouble 경계 =====
@@ -184,7 +185,7 @@ public class ConversionTests
     {
         // 캐스트 없이 넘기면 implicit 변환 때문에 Equals(BigDouble) 오버로드로 가버림
         Assert.That(new BigDouble(5).Equals((object)"5"), Is.False);
-        Assert.That(new BigDouble(5).Equals((object?)null), Is.False);
+        Assert.That(new BigDouble(5).Equals((object)null!), Is.False);
         Assert.That(
             new BigDouble(5).Equals((object)5.0),
             Is.False,
@@ -219,7 +220,7 @@ public class ConversionTests
     [Test]
     public void CompareToObject_Null_ReturnsPositive()
     {
-        Assert.That(new BigDouble(5).CompareTo((object?)null), Is.EqualTo(1));
+        Assert.That(new BigDouble(5).CompareTo((object)null!), Is.EqualTo(1));
     }
 
     [Test]

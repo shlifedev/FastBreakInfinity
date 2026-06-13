@@ -25,12 +25,8 @@ public class LegacyTests
         BigDouble value1 = new BigDouble("1.1e5");
         BigDouble value2 = new BigDouble("1.1e5");
 
-        Console.WriteLine(value1.ToStringMantissaExponent());
-        Console.WriteLine(value2.ToStringMantissaExponent());
-
         BigDouble result = value1 * value2;
 
-        Console.WriteLine(result.ToStringMantissaExponent());
         Assert.IsTrue(result >= new BigDouble("1.21e10"));
     }
 
@@ -88,7 +84,6 @@ public class LegacyTests
         if (money >= itemPrice)
             money -= itemPrice;
         Assert.IsTrue(money == 0);
-        Console.WriteLine(money.ToString());
     }
 
     [Test]
@@ -99,7 +94,6 @@ public class LegacyTests
         if (money >= itemPrice)
             money -= itemPrice;
         Assert.IsTrue(money == new BigDouble("9.9e1000"));
-        Console.WriteLine(money.ToStringMantissaExponent());
     }
 
     /// <summary>
