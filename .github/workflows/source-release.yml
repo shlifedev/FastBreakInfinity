@@ -1,0 +1,144 @@
+name: Source Release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to publish, for example v0.9.6
+        required: true
+        type: string
+      prerelease:
+        description: Mark the GitHub Release as a prerelease
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_CONFIGURATION: Release
+  DOTNET_NOLOGO: "true"
+  DOTNET_WORKING_DIRECTORY: src/dotnet/LD.Numeric
+
+jobs:
+  release:
+    name: Validate and publish source archives
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          tag_name="${{ github.event.inputs.tag_name }}"
+
+          if [ -z "$tag_name" ]; then
+            if [ "${{ github.ref_type }}" != "tag" ]; then
+              echo "tag_name is required when running this workflow manually from a branch." >&2
+              exit 1
+            fi
+
+            tag_name="${{ github.ref_name }}"
+          fi
+
+          asset_version="${tag_name//\//-}"
+
+          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
+          echo "asset_version=$asset_version" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: ${{ env.DOTNET_WORKING_DIRECTORY }}/global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/dotnet/LD.Numeric/**/*.csproj', 'src/dotnet/LD.Numeric/global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Check CSharpier formatting
+        run: dotnet csharpier check .
+
+      - name: Restore
+        working-directory: ${{ env.DOTNET_WORKING_DIRECTORY }}
+        run: dotnet restore LD.Numeric.sln
+
+      - name: Build
+        working-directory: ${{ env.DOTNET_WORKING_DIRECTORY }}
+        run: dotnet build LD.Numeric.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore -warnaserror
+
+      - name: Test
+        working-directory: ${{ env.DOTNET_WORKING_DIRECTORY }}
+        run: dotnet test LD.Numeric.Test/LD.Numeric.Test.csproj --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build
+
+      - name: Create source archives
+        id: archive
+        shell: bash
+        run: |
+          tag_name="${{ steps.release.outputs.tag_name }}"
+          asset_version="${{ steps.release.outputs.asset_version }}"
+          archive_prefix="LD.Numeric-$asset_version/"
+          zip_path="dist/LD.Numeric-$asset_version-source.zip"
+          tar_path="dist/LD.Numeric-$asset_version-source.tar.gz"
+          checksums_path="dist/SHA256SUMS.txt"
+
+          mkdir -p dist
+
+          git archive --format=zip --prefix="$archive_prefix" --output="$zip_path" HEAD
+          git archive --format=tar --prefix="$archive_prefix" HEAD | gzip -n > "$tar_path"
+          sha256sum "$zip_path" "$tar_path" > "$checksums_path"
+
+          echo "zip_path=$zip_path" >> "$GITHUB_OUTPUT"
+          echo "tar_path=$tar_path" >> "$GITHUB_OUTPUT"
+          echo "checksums_path=$checksums_path" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+          ZIP_PATH: ${{ steps.archive.outputs.zip_path }}
+          TAR_PATH: ${{ steps.archive.outputs.tar_path }}
+          CHECKSUMS_PATH: ${{ steps.archive.outputs.checksums_path }}
+          PRERELEASE: ${{ github.event.inputs.prerelease || false }}
+        run: |
+          release_flags=()
+
+          if [ "$PRERELEASE" = "true" ]; then
+            release_flags+=(--prerelease)
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$ZIP_PATH" "$TAR_PATH" "$CHECKSUMS_PATH" --clobber
+          else
+            gh release create "$TAG_NAME" \
+              "$ZIP_PATH" \
+              "$TAR_PATH" \
+              "$CHECKSUMS_PATH" \
+              --verify-tag \
+              --generate-notes \
+              --title "LD.Numeric $TAG_NAME" \
+              "${release_flags[@]}"
+          fi
