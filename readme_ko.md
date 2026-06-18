@@ -43,13 +43,50 @@ ex ) 1.123456789e10 => 1.123456e10
 
 ## 사용 방법
 
-BigInfinity.cs와 사용법이 완전히 동일하지만, 다음 규칙을 따라야 합니다.
-
-간단합니다.
 ```cs
-BigDouble _ = new BigDouble("1000000000000000000000"); // 숫자 생성자
-BigDouble _ = new BigDouble("9.999e100"); // 지수 생성자. 매우 빠릅니다!
-new BigDouble(1e3).ToString() // 결과 = "1.0A"
+using LD.Numeric.IdleNumber;
+```
+
+```cs
+BigDouble gold = new BigDouble(0);
+BigDouble cost = new BigDouble("1e100");
+
+gold += new BigDouble("1e10");
+
+if (gold >= cost)
+{
+    gold -= cost;
+}
+```
+
+`BigDouble`은 `+`, `-`, `*`, `/` 같은 기본 사칙연산과 `>`, `<`, `>=`, `<=` 같은 비교 연산을 지원합니다.
+
+```cs
+new BigDouble(999).ToString();    // "999"
+new BigDouble(1000).ToString();   // "1.00A"
+new BigDouble("1e6").ToString();  // "1.00B"
+new BigDouble("1e81").ToString(); // "1.00AA"
+```
+
+알파벳 단위는 1000배 단위로 증가합니다.
+
+```text
+A = 1e3
+B = 1e6
+C = 1e9
+...
+Z = 1e78
+AA = 1e81
+AB = 1e84
+```
+
+저장/로드에는 지수 표기 형식을 권장합니다.
+
+```cs
+BigDouble value = new BigDouble("1.234e100");
+
+string saved = value.ToStringMantissaExponent();
+BigDouble loaded = new BigDouble(saved);
 ```
 
 -----

@@ -44,12 +44,55 @@ ex ) 1.123456789e10 => 1.123456e10
 
 ## How to Use
 
-The usage is identical to BigInfinity.cs, but you must follow these rules:
+```cs
+using LD.Numeric.IdleNumber;
+```
 
 ```cs
-BigDouble _ = new BigDouble("1000000000000000000000"); // Number Constructor
-BigDouble _ = new BigDouble("9.999e100"); // Exponent Constructor - Very Fast!
-new BigDouble(1e3).ToString() // Result = "1.0A"
+BigDouble gold = new BigDouble(0);
+BigDouble cost = new BigDouble("1e100");
+
+gold += new BigDouble("1e10");
+
+if (gold >= cost)
+{
+    gold -= cost;
+}
+```
+
+`BigDouble` supports normal arithmetic operators such as `+`, `-`, `*`, `/` and comparison operators such as `>`, `<`, `>=`, `<=`.
+
+```cs
+new BigDouble(999).ToString();    // "999"
+new BigDouble(1000).ToString();   // "1.00A"
+new BigDouble("1e6").ToString();  // "1.00B"
+new BigDouble("1e81").ToString(); // "1.00AA"
+```
+
+Alphabet units are used every 1000x range:
+
+```text
+A = 1e3
+B = 1e6
+C = 1e9
+...
+Z = 1e78
+AA = 1e81
+AB = 1e84
+```
+
+`BigDouble` can theoretically display up to `1e9223372036854775807`, with
+`AFEPVDFLPDCJTB` as the largest alphabet unit. Safe reverse conversion through
+`GetExponentFromAlphabetUnit` is up to `AFEPVDFLPDCJTA`; this limit applies to
+`BigDouble`, not plain `double`.
+
+For save/load, exponent format is recommended:
+
+```cs
+BigDouble value = new BigDouble("1.234e100");
+
+string saved = value.ToStringMantissaExponent();
+BigDouble loaded = new BigDouble(saved);
 ```
 
 -----
