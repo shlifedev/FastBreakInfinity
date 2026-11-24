@@ -32,6 +32,15 @@ namespace LD.Numeric.IdleNumber
             1e22,
         };
 
+        internal static double Pow10(int exp)
+        {
+            if (exp >= 0 && exp < PositivePowersOf10.Length)
+                return PositivePowersOf10[exp];
+            if (exp < 0 && -exp < PositivePowersOf10.Length)
+                return 1.0 / PositivePowersOf10[-exp];
+            return Math.Pow(10.0, exp);
+        }
+
         /// <summary>
         /// 스트링을 더블로 변환함. null/빈 문자열은 0을 반환한다.
         /// NaN, Infinity, -Infinity 및 invariant 숫자 표기를 허용한다.
@@ -202,7 +211,7 @@ namespace LD.Numeric.IdleNumber
             }
 
             long integerPart = (long)value;
-            double scale = PositivePowersOf10[decimalPlaces];
+            double scale = Pow10(decimalPlaces);
             long fraction = (long)
                 Math.Round((value - integerPart) * scale, MidpointRounding.AwayFromZero);
             // 소수부 반올림이 자리올림되면 정수부로 캐리 (예: 1.999 → 2.00)
