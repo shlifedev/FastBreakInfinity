@@ -169,6 +169,7 @@ public class IdleGameExample
                 case "a":
                     AutoProduce();
                     break;
+                case null:
                 case "q":
                     Console.WriteLine("게임 종료!");
                     return;
@@ -279,6 +280,8 @@ public static class Program
 
         switch (choice)
         {
+            case null:
+                return;
             case "1":
                 var game = new IdleGameExample();
                 game.Run();

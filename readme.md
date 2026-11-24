@@ -95,6 +95,18 @@ string saved = value.ToStringMantissaExponent();
 BigDouble loaded = new BigDouble(saved);
 ```
 
+## Console samples
+
+With the .NET 10 SDK installed, run the idle game from the repository root.
+
+```sh
+dotnet run --project src/dotnet/LD.Numeric/LD.GameSample
+```
+
+Press Space to earn gold. Buy a generator with keys 1–4 to start earning gold over time. M cycles through the purchase quantities (1, 10, 100, maximum), and Q quits. Piped input uses the same keys and the game exits at end of input.
+
+Run `dotnet run --project src/dotnet/LD.Numeric/Example` for a menu with a line-based idle game and a `BigDouble` API demo.
+
 -----
 
 Many optimizations have been made.

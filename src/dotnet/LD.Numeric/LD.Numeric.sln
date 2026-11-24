@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LD.Numeric.Benchmark", "LD.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LD.GameSample", "LD.GameSample\LD.GameSample.csproj", "{55928E7C-8C49-4D69-B643-69B452E9E185}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example", "Example\Example.csproj", "{745299B6-07B7-4F7B-A9A7-59A0F948B9C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{55928E7C-8C49-4D69-B643-69B452E9E185}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55928E7C-8C49-4D69-B643-69B452E9E185}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{55928E7C-8C49-4D69-B643-69B452E9E185}.Release|Any CPU.Build.0 = Release|Any CPU
+		{745299B6-07B7-4F7B-A9A7-59A0F948B9C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{745299B6-07B7-4F7B-A9A7-59A0F948B9C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{745299B6-07B7-4F7B-A9A7-59A0F948B9C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{745299B6-07B7-4F7B-A9A7-59A0F948B9C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
