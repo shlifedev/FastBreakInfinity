@@ -29,13 +29,38 @@ public class AlphabetConverterTests
     }
 
     [Test]
+    public void GetExponent_AdjacentValues_SelectTheCorrectGroup()
+    {
+        Assert.That(AlphabetConverter.GetExponent(Math.BitDecrement(1e6)), Is.EqualTo(3));
+        Assert.That(AlphabetConverter.GetExponent(1e6), Is.EqualTo(6));
+        Assert.That(AlphabetConverter.GetExponent(Math.BitIncrement(1e6)), Is.EqualTo(6));
+        Assert.That(AlphabetConverter.GetExponent(Math.BitIncrement(0.001)), Is.Zero);
+        Assert.That(AlphabetConverter.GetExponent(0.001), Is.EqualTo(-3));
+        Assert.That(AlphabetConverter.GetExponent(double.Epsilon), Is.EqualTo(-321));
+        Assert.That(AlphabetConverter.GetExponent(double.MaxValue), Is.EqualTo(306));
+
+        var boundary = BigInteger.Pow(10, 21);
+        Assert.That(AlphabetConverter.GetExponent(boundary - 1), Is.EqualTo(18));
+        Assert.That(AlphabetConverter.GetExponent(boundary), Is.EqualTo(21));
+        Assert.That(AlphabetConverter.GetExponent(boundary + 1), Is.EqualTo(21));
+    }
+
+    [Test]
     public void GetExponent_NonPositive_Throws()
     {
-        // Log10(0)=-Inf, Log10(음수)=NaN이 long 캐스팅을 거치며 쓰레기 지수가 되는 것 방지.
-        // BigInteger 버전(BigInteger.Log10이 throw)과 동작을 맞춘다
+        // 로그를 계산하기 전에 두 오버로드가 모두 정의역을 검증한다.
         Assert.Throws<ArgumentOutOfRangeException>(() => AlphabetConverter.GetExponent(0.0));
         Assert.Throws<ArgumentOutOfRangeException>(() => AlphabetConverter.GetExponent(-5.0));
         Assert.Throws<ArgumentOutOfRangeException>(() => AlphabetConverter.GetExponent(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AlphabetConverter.GetExponent(double.PositiveInfinity)
+        );
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AlphabetConverter.GetExponent(BigInteger.Zero)
+        );
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AlphabetConverter.GetExponent(BigInteger.MinusOne)
+        );
     }
 
     // ===== ConvertToAlphabetUnit =====
@@ -63,6 +88,7 @@ public class AlphabetConverterTests
         Assert.That(1234.0.ConvertToAlphabetUnit(0), Is.EqualTo("1A"));
         Assert.That(1234.0.ConvertToAlphabetUnit(1), Is.EqualTo("1.2A"));
         Assert.That(1234.0.ConvertToAlphabetUnit(3), Is.EqualTo("1.234A"));
+        Assert.That((-1250.0).ConvertToAlphabetUnit(17), Is.EqualTo("-1.25000000000000000A"));
     }
 
     [Test]
@@ -113,6 +139,45 @@ public class AlphabetConverterTests
             var back = AlphabetConverter.ConvertFromAlphabetUnit(str);
             Assert.That(back, Is.EqualTo(value).Within(value * 0.01), $"'{str}' 라운드트립 실패");
         }
+    }
+
+    [TestCase(double.NaN)]
+    [TestCase(double.PositiveInfinity)]
+    [TestCase(double.NegativeInfinity)]
+    public void ConvertFromAlphabetUnit_RestoresFormattedSpecialValues(double value)
+    {
+        Assert.That(
+            AlphabetConverter.ConvertFromAlphabetUnit(value.ConvertToAlphabetUnit()),
+            Is.EqualTo(value)
+        );
+    }
+
+    [Test]
+    public void ConvertFromAlphabetUnit_LargeUnit_ScalesCoefficientBeforeOverflow()
+    {
+        string unit = AlphabetManager.GetAlphabetUnitFromExponent(309);
+        Assert.That(AlphabetConverter.ConvertFromAlphabetUnit("0" + unit), Is.Zero);
+        Assert.That(
+            AlphabetConverter.ConvertFromAlphabetUnit("0.1" + unit),
+            Is.EqualTo(1e308).Within(1e292)
+        );
+        Assert.That(
+            AlphabetConverter.ConvertFromAlphabetUnit("-10" + unit),
+            Is.EqualTo(double.NegativeInfinity)
+        );
+        string largest = BigDouble.GetAlphabetUnit(long.MaxValue);
+        Assert.That(
+            AlphabetConverter.ConvertFromAlphabetUnit("1" + largest),
+            Is.EqualTo(double.PositiveInfinity)
+        );
+    }
+
+    [TestCase("1e-400CY", 1e-91)]
+    [TestCase("1.25e+2A", 125000.0)]
+    [TestCase("1,234.5A", 1234500.0)]
+    public void ConvertFromAlphabetUnit_CombinesCoefficientAndSuffix(string text, double expected)
+    {
+        Assert.That(AlphabetConverter.ConvertFromAlphabetUnit(text), Is.EqualTo(expected));
     }
 
     // ===== BigDouble 쪽 알파벳 단위 API =====

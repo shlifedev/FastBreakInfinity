@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using System.Numerics;
-using LD;
 
 namespace LD.Numeric.IdleNumber
 {
@@ -35,9 +34,7 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static long GetExponent(double value)
         {
-            // Log10이 0/음수에서 -Inf/NaN을 내고 long 캐스팅에서 포화돼 쓰레기 지수가 됨.
-            // BigInteger 버전(BigInteger.Log10이 throw)과 동작을 맞춘다
-            if (double.IsNaN(value) || value <= 0)
+            if (!(value > 0) || double.IsInfinity(value))
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(value),
@@ -46,25 +43,29 @@ namespace LD.Numeric.IdleNumber
                 );
             }
 
-            var exponent = (long)(Math.Log10(value) / ExponentUnit) * ExponentUnit;
-            // Math.Log10(1e21)이 20.999...로 나오는 플랫폼에서 단위가 한 단계 어긋나는 것 보정
-            if (value / Math.Pow(10, exponent) >= 1000)
-            {
-                exponent += ExponentUnit;
-            }
+            // Log10은 경계 양옆에서 같은 값을 줄 수 있으므로 가장 가까운 경계와 직접 비교한다.
+            long exponent = (long)Math.Round(Math.Log10(value) / ExponentUnit) * ExponentUnit;
+            double boundary = Math.Pow(10, exponent);
+            if (value >= 1 && value < boundary)
+                return exponent - ExponentUnit;
+            if (value < 1 && value > boundary)
+                return exponent + ExponentUnit;
             return exponent;
         }
 
         // int, float, long은 암묵적으로 double로 변환되어 위 메서드 사용
         public static long GetExponent(BigInteger value)
         {
-            var exponent = (long)(BigInteger.Log10(value) / ExponentUnit) * ExponentUnit;
-            // double 버전과 같은 보정 — Log10(10^30)이 29.999...로 나오면 단위가 한 단계 어긋남
-            if (value / BigInteger.Pow(10, (int)exponent) >= 1000)
-            {
-                exponent += ExponentUnit;
-            }
-            return exponent;
+            if (value.Sign <= 0)
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "지수는 양수에 대해서만 계산할 수 있습니다."
+                );
+
+            long exponent = (long)Math.Round(BigInteger.Log10(value) / ExponentUnit) * ExponentUnit;
+            var boundary = BigInteger.Pow(10, (int)exponent);
+            return value < boundary ? exponent - ExponentUnit : exponent;
         }
 
         #region 알파벳포함값 => 일반값 역함수
@@ -73,6 +74,12 @@ namespace LD.Numeric.IdleNumber
         {
             if (string.IsNullOrEmpty(str))
                 return 0;
+            if (str == "Infinity")
+                return double.PositiveInfinity;
+            if (str == "-Infinity")
+                return double.NegativeInfinity;
+            if (str == "NaN")
+                return double.NaN;
 
             int lastAlphaIndex = str.Length - 1;
             while (lastAlphaIndex >= 0 && char.IsLetter(str[lastAlphaIndex]))
@@ -86,12 +93,60 @@ namespace LD.Numeric.IdleNumber
             if (lastAlphaIndex == str.Length - 1)
                 return double.Parse(str, CultureInfo.InvariantCulture);
 
-            string numberPart = str.Substring(0, lastAlphaIndex + 1);
-            double number = double.Parse(numberPart, CultureInfo.InvariantCulture);
-            // GetIndexFromUnit은 0-indexed (A=0, B=1, ...) 이므로 +1하여 exponent 계산
-            long exponent =
-                (AlphabetManager.GetIndexFromUnit(str.AsSpan(lastAlphaIndex + 1)) + 1) * 3;
-            return number * Math.Pow(10, exponent);
+            var number = str.AsSpan(0, lastAlphaIndex + 1).TrimEnd();
+            long index = AlphabetManager.GetIndexFromUnit(str.AsSpan(lastAlphaIndex + 1));
+            // 단위 지수를 적용한 뒤 double로 한 번만 파싱한다 (0.1 × 10^309도 유한).
+            int marker = number.IndexOfAny('e', 'E');
+            if (marker >= 0 || index >= long.MaxValue / ExponentUnit)
+            {
+                BigInteger exponent = ((BigInteger)index + 1) * ExponentUnit;
+                if (marker >= 0)
+                {
+                    exponent += BigInteger.Parse(
+                        number.Slice(marker + 1),
+                        NumberStyles.AllowLeadingSign,
+                        CultureInfo.InvariantCulture
+                    );
+                    number = number.Slice(0, marker);
+                }
+                return ParseScaledNumber(
+                    number.ToString() + "e" + exponent.ToString(CultureInfo.InvariantCulture)
+                );
+            }
+
+            long unitExponent = (index + 1) * ExponentUnit;
+            Span<char> literal =
+                number.Length <= 64
+                    ? stackalloc char[number.Length + 20]
+                    : new char[number.Length + 20];
+            number.CopyTo(literal);
+            literal[number.Length] = 'e';
+            unitExponent.TryFormat(
+                literal.Slice(number.Length + 1),
+                out int written,
+                default,
+                CultureInfo.InvariantCulture
+            );
+            return ParseScaledNumber(literal.Slice(0, number.Length + 1 + written));
+        }
+
+        private static double ParseScaledNumber(ReadOnlySpan<char> literal)
+        {
+            try
+            {
+                return double.Parse(
+                    literal,
+                    NumberStyles.Float | NumberStyles.AllowThousands,
+                    CultureInfo.InvariantCulture
+                );
+            }
+            catch (OverflowException)
+            {
+                // Unity Mono는 범위를 넘는 유효 숫자를 Infinity로 반환하는 대신 예외를 던진다.
+                return literal.TrimStart()[0] == '-'
+                    ? double.NegativeInfinity
+                    : double.PositiveInfinity;
+            }
         }
 
         #endregion
@@ -109,18 +164,17 @@ namespace LD.Numeric.IdleNumber
             if (double.IsNaN(number) || double.IsInfinity(number))
                 return number.ToString(CultureInfo.InvariantCulture);
 
-            // 음수는 절대값 기준으로 단위를 붙이고 부호를 복원 (기존엔 단위가 아예 안 붙었음)
-            if (number < 0)
-                return "-" + ConvertToAlphabetUnit(-number, maxDecimalPoint);
-
-            if (number < 1000)
+            double magnitude = Math.Abs(number);
+            if (magnitude < 1000)
                 return number.ToString(CultureInfo.InvariantCulture);
 
-            long exponent = GetExponent(number);
+            long exponent = GetExponent(magnitude);
             double divisor = Math.Pow(10, exponent);
-            double newNumber = Math.Round(number / divisor, maxDecimalPoint);
+            double newNumber = number / divisor;
+            if (maxDecimalPoint <= 15)
+                newNumber = Math.Round(newNumber, maxDecimalPoint);
             // 반올림이 단위 경계(1000)에 도달하면 단위를 한 칸 올림 (999999 → 1.00B)
-            if (newNumber >= 1000)
+            if (Math.Abs(newNumber) >= 1000)
             {
                 newNumber /= 1000;
                 exponent += ExponentUnit;
