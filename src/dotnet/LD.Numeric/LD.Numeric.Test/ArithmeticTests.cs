@@ -111,4 +111,71 @@ public class ArithmeticTests
         BigDouble negResult = (-a) / BigDouble.Zero;
         Assert.That(BigDouble.IsNegativeInfinity(negResult), Is.True, "음수 / 0 = -Inf");
     }
+
+    [Test]
+    public void ExponentLimits_NormalizationSaturates()
+    {
+        Assert.That(BigDouble.IsNegativeInfinity(new BigDouble(-10, long.MaxValue)), Is.True);
+        Assert.That(new BigDouble(0.25, long.MinValue), Is.EqualTo(BigDouble.Zero));
+        Assert.That(BigDouble.IsPositiveInfinity(new BigDouble(1000, long.MaxValue - 2)), Is.True);
+    }
+
+    [Test]
+    public void ExponentLimits_AdditionPreservesMagnitude()
+    {
+        var largest = BigDouble.Pow10(long.MaxValue);
+        var smallest = BigDouble.Pow10(long.MinValue);
+        Assert.That(largest + smallest, Is.EqualTo(largest));
+        Assert.That(smallest + smallest, Is.EqualTo(new BigDouble(2, long.MinValue)));
+        Assert.That(smallest - smallest, Is.EqualTo(BigDouble.Zero));
+        Assert.That(
+            BigDouble.IsPositiveInfinity(new BigDouble(9, long.MaxValue) + largest),
+            Is.True
+        );
+    }
+
+    [Test]
+    public void ExponentLimits_MultiplyAndDivideIncludeNormalizationCarry()
+    {
+        Assert.That(
+            new BigDouble(5, long.MinValue) * new BigDouble(2, -1),
+            Is.EqualTo(BigDouble.Pow10(long.MinValue))
+        );
+        Assert.That(
+            new BigDouble(-1, long.MaxValue) / new BigDouble(2, -1),
+            Is.EqualTo(new BigDouble(-5, long.MaxValue))
+        );
+        Assert.That(BigDouble.IsPositiveInfinity(new BigDouble(5, long.MaxValue) * 2), Is.True);
+        Assert.That(BigDouble.Pow10(long.MinValue) / 2, Is.EqualTo(BigDouble.Zero));
+    }
+
+    [Test]
+    public void ExponentLimits_ReciprocalHandlesMinimumExponent()
+    {
+        Assert.That(
+            BigDouble.IsPositiveInfinity(BigDouble.Reciprocate(BigDouble.Pow10(long.MinValue))),
+            Is.True
+        );
+        Assert.That(
+            BigDouble.Reciprocate(new BigDouble(-2, long.MinValue)),
+            Is.EqualTo(new BigDouble(-5, long.MaxValue))
+        );
+    }
+
+    [Test]
+    public void ExponentLimits_RootsRetainAllExponentDigits()
+    {
+        Assert.That(
+            BigDouble.Sqrt(BigDouble.Pow10(long.MaxValue)).Exponent,
+            Is.EqualTo(4611686018427387903L)
+        );
+        Assert.That(
+            BigDouble.Cbrt(BigDouble.Pow10(long.MinValue)).Exponent,
+            Is.EqualTo(-3074457345618258603L)
+        );
+        Assert.That(
+            BigDouble.Cbrt(BigDouble.Pow10(long.MaxValue)).Exponent,
+            Is.EqualTo(3074457345618258602L)
+        );
+    }
 }
