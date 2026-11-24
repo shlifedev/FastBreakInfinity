@@ -1210,17 +1210,17 @@ namespace LD.Numeric.IdleNumber
             // 비율 1은 고정가라 등비 공식이 성립하지 않음 (log10(1) 나눗셈 → NaN)
             if (priceRatio == BigDouble.One)
             {
-                return BigDouble.Floor(resourcesAvailable / priceStart);
+                return AffordFixedPrice(resourcesAvailable, priceStart);
             }
 
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
-            //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
-
-            return BigDouble.Floor(
+            var count = BigDouble.Round(
                 BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1)
                     / BigDouble.Log10(priceRatio)
             );
+            var cost = GeometricCost(count, actualStart, priceRatio);
+            return cost > resourcesAvailable ? count - 1 : count;
         }
 
         /// <summary>
@@ -1242,7 +1242,22 @@ namespace LD.Numeric.IdleNumber
 
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
+            return GeometricCost(numItems, actualStart, priceRatio);
+        }
+
+        private static BigDouble GeometricCost(
+            BigDouble numItems,
+            BigDouble actualStart,
+            BigDouble priceRatio
+        )
+        {
             return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
+        }
+
+        private static BigDouble AffordFixedPrice(BigDouble resourcesAvailable, BigDouble price)
+        {
+            var count = BigDouble.Round(resourcesAvailable / price);
+            return count * price > resourcesAvailable ? count - 1 : count;
         }
 
         /// <summary>
@@ -1257,18 +1272,19 @@ namespace LD.Numeric.IdleNumber
             BigDouble currentOwned
         )
         {
+            if (priceAdd == BigDouble.Zero)
+                return AffordFixedPrice(resourcesAvailable, priceStart);
+
             var actualStart = priceStart + currentOwned * priceAdd;
-
-            //n = (-(a-d/2) + sqrt((a-d/2)^2+2dS))/d
-            //where a is actualStart, d is priceAdd and S is resourcesAvailable
-            //then floor it and you're done!
-
             var b = actualStart - priceAdd / 2;
-            var b2 = BigDouble.Pow(b, 2);
-
-            return BigDouble.Floor(
-                (BigDouble.Sqrt(b2 + priceAdd * resourcesAvailable * 2) - b) / priceAdd
-            );
+            var root = BigDouble.Sqrt(b * b + 2 * priceAdd * resourcesAvailable);
+            // Use the conjugate when subtracting b would cancel the significant digits.
+            var estimate =
+                b > BigDouble.Zero ? 2 * resourcesAvailable / (root + b) : (root - b) / priceAdd;
+            var count = BigDouble.Round(estimate);
+            return ArithmeticCost(count, actualStart, priceAdd) > resourcesAvailable
+                ? count - 1
+                : count;
         }
 
         /// <summary>
@@ -1287,8 +1303,15 @@ namespace LD.Numeric.IdleNumber
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
-            //(n/2)*(2*a+(n-1)*d)
+            return ArithmeticCost(numItems, actualStart, priceAdd);
+        }
 
+        private static BigDouble ArithmeticCost(
+            BigDouble numItems,
+            BigDouble actualStart,
+            BigDouble priceAdd
+        )
+        {
             return numItems / 2 * (2 * actualStart + (numItems - 1) * priceAdd);
         }
 

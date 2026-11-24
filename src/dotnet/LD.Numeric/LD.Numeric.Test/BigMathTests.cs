@@ -108,8 +108,7 @@ public class BigMathTests
         BigDouble owned = 3;
         BigDouble count = 7;
 
-        // 정확한 경계값은 log/floor 오차로 한 개 아래로 떨어질 수 있어 약간의 버퍼를 줌
-        var cost = BigMath.SumGeometricSeries(count, priceStart, ratio, owned) * 1.000001;
+        var cost = BigMath.SumGeometricSeries(count, priceStart, ratio, owned);
         var affordable = BigMath.AffordGeometricSeries(cost, priceStart, ratio, owned);
         Assert.That(affordable.Equals(count, 1e-6), Is.True, $"기대 {count}, 실제 {affordable}");
     }
@@ -158,8 +157,7 @@ public class BigMathTests
         BigDouble owned = 4;
         BigDouble count = 10;
 
-        // 정확한 경계값은 sqrt/floor 오차로 한 개 아래로 떨어질 수 있어 약간의 버퍼를 줌
-        var cost = BigMath.SumArithmeticSeries(count, priceStart, priceAdd, owned) * 1.000001;
+        var cost = BigMath.SumArithmeticSeries(count, priceStart, priceAdd, owned);
         var affordable = BigMath.AffordArithmeticSeries(cost, priceStart, priceAdd, owned);
         Assert.That(affordable.Equals(count, 1e-6), Is.True, $"기대 {count}, 실제 {affordable}");
     }
@@ -201,5 +199,48 @@ public class BigMathTests
             bool normalized = m == 0 || (m >= 1 && m < 10);
             Assert.That(normalized, Is.True, $"정규화 위반: {value.ToStringMantissaExponent()}");
         }
+    }
+
+    [TestCase(9, 0)]
+    [TestCase(35, 3)]
+    [TestCase(40, 4)]
+    public void PurchaseCount_FlatArithmeticPrice(int resources, int expected)
+    {
+        Assert.That(
+            BigMath.AffordArithmeticSeries(resources, 10, 0, 7),
+            Is.EqualTo(new BigDouble(expected))
+        );
+    }
+
+    [Test]
+    public void PurchaseCount_LargeStartingPriceAndSmallIncrease()
+    {
+        var price = new BigDouble(1, 30);
+        Assert.That(
+            BigMath.AffordArithmeticSeries(price * 3.5, price, 1, 0),
+            Is.EqualTo(new BigDouble(3))
+        );
+    }
+
+    [Test]
+    public void PurchaseCount_GeometricBudgetJustBelowTotal()
+    {
+        var cost = BigMath.SumGeometricSeries(6, 1, 2, 0);
+        Assert.That(BigMath.AffordGeometricSeries(cost, 1, 2, 0), Is.EqualTo(new BigDouble(6)));
+        Assert.That(
+            BigMath.AffordGeometricSeries(cost - 1e-9, 1, 2, 0),
+            Is.EqualTo(new BigDouble(5))
+        );
+    }
+
+    [Test]
+    public void PurchaseCount_ArithmeticBudgetJustBelowTotal()
+    {
+        var cost = BigMath.SumArithmeticSeries(5, 10, 5, 0);
+        Assert.That(BigMath.AffordArithmeticSeries(cost, 10, 5, 0), Is.EqualTo(new BigDouble(5)));
+        Assert.That(
+            BigMath.AffordArithmeticSeries(cost - 1e-9, 10, 5, 0),
+            Is.EqualTo(new BigDouble(4))
+        );
     }
 }
