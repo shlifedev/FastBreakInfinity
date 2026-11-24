@@ -265,11 +265,18 @@ namespace LD.Numeric.IdleNumber
                 return ToDouble().ToString(CultureInfo.InvariantCulture);
 
             long unitNumber = exponent / ExponentUnit;
-            // 단위 스케일링의 부동소수점 오차로 999.5가 999.4999999999999가 될 수 있다.
-            double adjusted = Math.Round(ScaleForAlphabetUnit(mantissa), FractionalPartAccuracy);
+            double adjusted = ScaleForAlphabetUnit(mantissa);
             int decimals = fixedDecimalCount ?? GetDisplayDecimals(adjusted, unitNumber);
-            if (decimals <= 15)
-                adjusted = Math.Round(adjusted, decimals, MidpointRounding.AwayFromZero);
+            if (decimals <= 12)
+            {
+                // 스케일링한 999.5는 999.4999999999999가 될 수 있으므로 원래 가수에서 중점을 비교한다.
+                double scale = FastDouble.Pow10((int)(exponent % ExponentUnit) + decimals);
+                double magnitude = Math.Abs(mantissa);
+                double lower = Math.Floor(magnitude * scale);
+                if (magnitude >= (lower + 0.5) / scale)
+                    lower++;
+                adjusted = (mantissa < 0 ? -lower : lower) / FastDouble.Pow10(decimals);
+            }
             if (Math.Abs(adjusted) >= 1000)
             {
                 adjusted /= 1000;

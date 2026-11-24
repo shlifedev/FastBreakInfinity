@@ -8,9 +8,13 @@ namespace LD.Numeric.Test;
 public class ToStringFormattingTests
 {
     [TestCase(999.49, "999")]
+    [TestCase(999.4999998, "999")]
+    [TestCase(-999.4999998, "-999")]
     [TestCase(999.5, "1.00A")]
     [TestCase(-999.5, "-1.00A")]
     [TestCase(999499.96, "999A")]
+    [TestCase(999499.9998, "999A")]
+    [TestCase(-999499.9998, "-999A")]
     [TestCase(999500, "1.00B")]
     [TestCase(-999500, "-1.00B")]
     [TestCase(9996, "10.0A")]
@@ -18,6 +22,15 @@ public class ToStringFormattingTests
     public void ToString_RoundingUsesFinalUnitAndDigitCount(double value, string expected)
     {
         Assert.That(new BigDouble(value).ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void ToString_AdjacentMantissas_StraddleUnitCarry()
+    {
+        const double midpoint = 9.995;
+        Assert.That(new BigDouble(Math.BitDecrement(midpoint), 5).ToString(), Is.EqualTo("999A"));
+        Assert.That(new BigDouble(midpoint, 5).ToString(), Is.EqualTo("1.00B"));
+        Assert.That(new BigDouble(Math.BitIncrement(midpoint), 5).ToString(), Is.EqualTo("1.00B"));
     }
 
     [Test]
