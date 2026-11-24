@@ -831,7 +831,11 @@ namespace LD.Numeric.IdleNumber
 
         public static double Log(BigDouble value, BigDouble @base)
         {
-            return Log(value, @base.ToDouble());
+            if (@base == One || IsZero(@base.Mantissa))
+                return double.NaN;
+            if (IsInfinity(@base))
+                return value == One && IsPositiveInfinity(@base) ? 0.0 : double.NaN;
+            return Log10(value) / Log10(@base);
         }
 
         public static double Log(BigDouble value, double @base)
@@ -843,6 +847,8 @@ namespace LD.Numeric.IdleNumber
             }
 
             // 대부분의 증분 게임에서 log(number >= 1, base >= 2)이므로 간단히 처리
+            if (double.IsPositiveInfinity(@base))
+                return value == One ? 0.0 : double.NaN;
             return Ln10 / Math.Log(@base) * Log10(value);
         }
 
@@ -858,9 +864,17 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Pow10(double power)
         {
-            return IsInteger(power)
-                ? Pow10((long)power)
-                : Normalize(Math.Pow(10, power % 1), (long)Math.Truncate(power));
+            // 2^63 is the first double above long.MaxValue.
+            if (power >= -(double)long.MinValue)
+                return PositiveInfinity;
+            if (power < long.MinValue)
+                return Zero;
+            if (double.IsNaN(power))
+                return NaN;
+            long exponent = (long)power;
+            return power == exponent
+                ? Pow10(exponent)
+                : Normalize(Math.Pow(10, power - exponent), exponent);
         }
 
         public static BigDouble Pow10(long power)
@@ -876,106 +890,98 @@ namespace LD.Numeric.IdleNumber
         public static BigDouble Pow(BigDouble value, long power)
         {
             if (power == 0)
-            {
                 return One;
-            }
-
             if (power == 1)
+                return value;
+
+            bool negative = value.Mantissa < 0 && (power & 1) != 0;
+            var magnitude = Math.Abs(value.Mantissa);
+            if (!IsFinite(magnitude) || magnitude == 0)
             {
-                return Normalize(value.Mantissa, value.Exponent);
+                BigDouble special = Math.Pow(magnitude, power);
+                return negative ? -special : special;
             }
 
-            if (Is10(value))
+            if (magnitude == 1 && value.Exponent == 1)
+                return negative ? -Pow10(power) : Pow10(power);
+
+            var poweredMantissa = Math.Pow(magnitude, power);
+            if (poweredMantissa >= 1e-307 && IsFinite(poweredMantissa))
             {
-                return Pow10(power);
+                var scaled = Normalize(negative ? -poweredMantissa : poweredMantissa, 0);
+                try
+                {
+                    long exponent = checked(value.Exponent * power + scaled.Exponent);
+                    return FromMantissaExponentNoNormalize(scaled.Mantissa, exponent);
+                }
+                catch (OverflowException)
+                {
+                    // A mantissa carry can bring the product back within the long range.
+                    if (Math.Abs((double)value.Exponent * power) <= -(double)long.MinValue)
+                    {
+                        decimal exponent = (decimal)value.Exponent * power + scaled.Exponent;
+                        if (exponent >= long.MinValue && exponent <= long.MaxValue)
+                            return FromMantissaExponentNoNormalize(scaled.Mantissa, (long)exponent);
+                    }
+                    if ((value.Exponent > 0) != (power > 0))
+                        return Zero;
+                    return negative ? NegativeInfinity : PositiveInfinity;
+                }
             }
 
-            var mantissa = Math.Pow(value.Mantissa, power);
-            if (double.IsInfinity(mantissa))
+            // Keep each intermediate normalized when the mantissa power exceeds double's range.
+            var factor = power < 0 ? Reciprocate(value) : value;
+            var result = One;
+            ulong remaining = power < 0 ? unchecked((ulong)-power) : (ulong)power;
+            while (remaining != 0)
             {
-                // TODO: This is rather dumb, but works anyway
-                // Power is too big for our mantissa, so we do multiple Pow with smaller powers.
-                // 제곱하는 순간 음수 밑의 부호가 사라지므로 홀수 거듭제곱이면 복원
-                var result = Pow(Pow(value, 2), (double)power / 2);
-                return value.Mantissa < 0 && (power & 1) == 1 ? -result : result;
+                if ((remaining & 1) != 0)
+                    result *= factor;
+                remaining >>= 1;
+                if (remaining != 0)
+                    factor *= factor;
             }
 
-            // Exponent 오버플로우 방어
-            long newExponent;
-            try
-            {
-                newExponent = checked(value.Exponent * power);
-            }
-            catch (OverflowException)
-            {
-                // NaN의 지수는 long.MinValue 센티널이라 여기로 흘러올 수 있음 — Zero로 둔갑 방지
-                if (IsNaN(value))
-                    return NaN;
-
-                bool positiveResult = mantissa > 0;
-                bool exponentPositive =
-                    (value.Exponent > 0 && power > 0) || (value.Exponent < 0 && power < 0);
-                if (exponentPositive)
-                    return positiveResult ? PositiveInfinity : NegativeInfinity;
-                return Zero;
-            }
-
-            return Normalize(mantissa, newExponent);
+            return result;
         }
 
         public static BigDouble Pow(BigDouble value, double power)
         {
-            // TODO: power can be greater that long.MaxValue, which can bring troubles in fast track
-            var powerIsInteger = IsInteger(power);
-            if (value < 0 && !powerIsInteger)
-            {
+            if (power >= long.MinValue && power < -(double)long.MinValue && IsInteger(power))
+                return Pow(value, (long)power);
+            if (double.IsNaN(power))
+                return value == One ? One : NaN;
+            if (IsNaN(value))
                 return NaN;
-            }
-            return Is10(value) && powerIsInteger ? Pow10(power) : PowInternal(value, power);
-        }
 
-        private static bool Is10(BigDouble value)
-        {
-            // Math.Abs 없이는 mantissa가 -1인 -10도 통과해 Pow(-10, n)의 부호가 사라짐
-            return value.Exponent == 1 && Math.Abs(value.Mantissa - 1) < double.Epsilon;
-        }
-
-        private static BigDouble PowInternal(BigDouble value, double other)
-        {
-            //UN-SAFETY: Accuracy not guaranteed beyond ~9~11 decimal places.
-
-            //TODO: Fast track seems about neutral for performance. It might become faster if an integer pow is implemented, or it might not be worth doing (see https://github.com/Patashu/break_infinity.js/issues/4 )
-
-            //Fast track: If (this.exponent*value) is an integer and mantissa^value fits in a Number, we can do a very fast method.
-            var temp = value.Exponent * other;
-            double newMantissa;
-            if (IsInteger(temp) && IsFinite(temp) && Math.Abs(temp) < ExpLimit)
+            if (double.IsInfinity(power))
             {
-                newMantissa = Math.Pow(value.Mantissa, other);
-                if (IsFinite(newMantissa))
-                {
-                    return Normalize(newMantissa, (long)temp);
-                }
+                int comparison = Abs(value).CompareTo(One);
+                if (comparison == 0)
+                    return One;
+                return (comparison > 0) == (power > 0) ? PositiveInfinity : Zero;
             }
 
-            //Same speed and usually more accurate. (An arbitrary-precision version of this calculation is used in break_break_infinity.js, sacrificing performance for utter accuracy.)
+            if (value.Mantissa < 0 && !IsInteger(power))
+                return NaN;
+            if (!IsFinite(value.Mantissa) || value.Mantissa == 0)
+                return new BigDouble(Math.Pow(Math.Abs(value.Mantissa), power));
 
-            var newexponent = Math.Truncate(temp);
-            var residue = temp - newexponent;
-            newMantissa = Math.Pow(10, other * Math.Log10(value.Mantissa) + residue);
-            if (IsFinite(newMantissa))
+            var exponentProduct = value.Exponent * power;
+            if (exponentProduct >= long.MinValue && exponentProduct < -(double)long.MinValue)
             {
-                return Normalize(newMantissa, (long)newexponent);
+                long exponent = (long)exponentProduct;
+                var scaledMantissa =
+                    Math.Pow(Math.Abs(value.Mantissa), power)
+                    * Math.Pow(10, exponentProduct - exponent);
+                if (scaledMantissa >= 1e-307 && IsFinite(scaledMantissa))
+                    return Normalize(scaledMantissa, exponent);
             }
 
-            //UN-SAFETY: This should return NaN when mantissa is negative and value is noninteger.
-            var result = Pow10(other * AbsLog10(value)); //this is 2x faster and gives same values AFAIK
-            if (Sign(value) == -1 && AreEqual(Math.Abs(other % 2), 1))
-            {
-                return -result;
-            }
-
-            return result;
+            // Finite integral doubles outside the long range are even.
+            double logMagnitude =
+                value.Exponent == -1 ? Math.Log10(Math.Abs(value.Mantissa) / 10) : AbsLog10(value);
+            return Pow10(power * logMagnitude);
         }
 
         public static BigDouble Factorial(BigDouble value)

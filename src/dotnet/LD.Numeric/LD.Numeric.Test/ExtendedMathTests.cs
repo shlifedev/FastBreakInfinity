@@ -323,4 +323,59 @@ public class ExtendedMathTests
         Assert.That(value.Reciprocate() == BigDouble.Reciprocate(value), Is.True);
         Assert.That(value.Sign(), Is.EqualTo(1));
     }
+
+    [Test]
+    public void PowerRange_NegativePowerKeepsTinyMantissaResult()
+    {
+        Assert.That(BigDouble.Pow(2, -2000L).Exponent, Is.EqualTo(-603));
+        Assert.That(BigDouble.Pow(2, -2000.0).Mantissa, Is.EqualTo(8.7098098162172).Within(1e-11));
+        Assert.That(BigDouble.Pow(-2, -2001L).Mantissa, Is.EqualTo(-4.3549049081086).Within(1e-11));
+    }
+
+    [Test]
+    public void PowerRange_IntegerPowerRetainsParityAndExponent()
+    {
+        Assert.That(BigDouble.Pow(-1, long.MaxValue), Is.EqualTo(-BigDouble.One));
+        var value = new BigDouble(1, 9007199254740993L);
+        Assert.That(BigDouble.Pow(value, 1.0), Is.EqualTo(value));
+        Assert.That(BigDouble.Pow(value, 2.0).Exponent, Is.EqualTo(18014398509481986L));
+    }
+
+    [TestCase(1e20)]
+    [TestCase(double.PositiveInfinity)]
+    public void PowerRange_Pow10SaturatesAtExponentLimits(double power)
+    {
+        Assert.That(BigDouble.IsPositiveInfinity(BigDouble.Pow10(power)), Is.True);
+        Assert.That(BigDouble.Pow10(-power), Is.EqualTo(BigDouble.Zero));
+        Assert.That(BigDouble.IsPositiveInfinity(BigDouble.Pow(2, power)), Is.True);
+        Assert.That(BigDouble.Pow(2, -power), Is.EqualTo(BigDouble.Zero));
+    }
+
+    [Test]
+    public void LogRange_ExtendedBasesKeepTheirExponent()
+    {
+        Assert.That(BigDouble.Log(new BigDouble(1, 800), new BigDouble(1, 400)), Is.EqualTo(2));
+        Assert.That(BigDouble.Log(new BigDouble(1, 800), new BigDouble(1, -400)), Is.EqualTo(-2));
+    }
+
+    [Test]
+    public void PowerRange_IntegralPowersOfSpecialValues()
+    {
+        Assert.That(BigDouble.IsPositiveInfinity(BigDouble.Pow(BigDouble.Zero, -1L)), Is.True);
+        Assert.That(
+            BigDouble.IsNegativeInfinity(BigDouble.Pow(BigDouble.NegativeInfinity, 3L)),
+            Is.True
+        );
+        Assert.That(BigDouble.Pow(BigDouble.PositiveInfinity, -2L), Is.EqualTo(BigDouble.Zero));
+        Assert.That(BigDouble.IsNaN(BigDouble.Pow(BigDouble.NaN, 3.0)), Is.True);
+        Assert.That(BigDouble.Pow(BigDouble.NaN, 0.0), Is.EqualTo(BigDouble.One));
+    }
+
+    [Test]
+    public void PowerRange_FractionalExponentKeepsMantissaAtLargeScale()
+    {
+        var result = BigDouble.Pow(new BigDouble(4, 1000000000000000000L), 0.5);
+        Assert.That(result.Mantissa, Is.EqualTo(2));
+        Assert.That(result.Exponent, Is.EqualTo(500000000000000000L));
+    }
 }
