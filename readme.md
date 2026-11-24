@@ -22,6 +22,14 @@ An extended fork of [BreakInfinity.cs](https://github.com/Razenpok/BreakInfinity
 
 </details>
 
+## Install in Unity
+
+Use Unity 2021.2 or later with the .NET Standard 2.1 API profile. In the Package Manager, select **Add package from git URL** and enter the package URL.
+
+```text
+https://github.com/shlifedev/FastBreakInfinity.git?path=/src/unity/Assets/LD.Numeric
+```
+
 ## Why Fast?
 
 The functions shown in the picture were called 1,000 times per frame.
