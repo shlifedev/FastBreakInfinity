@@ -109,10 +109,10 @@ namespace LD.Numeric.IdleNumber
             }
 
             long tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
-            //SAFETY: handle 5e-324, -5e-324 separately
-            if (tempExponent == DoubleExpMin)
+            // Scale subnormals before dividing so that the power of ten has full precision.
+            if (tempExponent < -307)
             {
-                mantissa = mantissa * 10 / 1e-323;
+                mantissa = mantissa * 1e300 / PowersOf10.Lookup(tempExponent + 300);
             }
             else
             {
@@ -218,9 +218,9 @@ namespace LD.Numeric.IdleNumber
 
         public double ToDouble()
         {
-            if (IsNaN(this))
+            if (!IsFinite(Mantissa) || Mantissa == 0)
             {
-                return double.NaN;
+                return Mantissa;
             }
 
             if (Exponent > DoubleExpMax)
@@ -230,26 +230,26 @@ namespace LD.Numeric.IdleNumber
 
             if (Exponent < DoubleExpMin)
             {
-                return 0.0;
+                return Mantissa < 0 ? -0.0 : 0.0;
             }
 
-            //SAFETY: again, handle 5e-324, -5e-324 separately
-            if (Exponent == DoubleExpMin)
+            // Perform the rounding into the subnormal range only at the final division.
+            if (Exponent < -307)
             {
-                return Mantissa > 0 ? 5e-324 : -5e-324;
+                return Mantissa * PowersOf10.Lookup(Exponent + 300) / 1e300;
             }
 
-            var result = Mantissa * PowersOf10.Lookup(Exponent);
+            var scale = PowersOf10.Lookup(Exponent);
+            var result = Mantissa * scale;
             if (!IsFinite(result) || Exponent < 0)
             {
                 return result;
             }
 
-            var resultrounded = Math.Round(result);
-            // 절대 임계값(1e-10)만으로는 1e8 이상 정수의 정규화 오차(상대 ~1e-16)를 못 잡아서
-            // 123456789가 123456788.99999999로 돌아옴. 상대 임계값(수 ulp 수준)을 함께 사용
-            if (Math.Abs(resultrounded - result) < Math.Max(1e-10, Math.Abs(result) * 1e-15))
-                return resultrounded;
+            var integer = Math.Round(result);
+            // Recover an original integer only if it reproduces the stored mantissa.
+            if (integer != result && integer / scale == Mantissa)
+                return integer;
             return result;
         }
 
@@ -365,7 +365,8 @@ namespace LD.Numeric.IdleNumber
 
             if (value.Exponent < -1)
             {
-                return Zero;
+                // Retain the direction even when ToDouble() would underflow to zero.
+                return new BigDouble(Math.Round(Math.Sign(value.Mantissa) * 0.01, mode));
             }
 
             if (value.Exponent < MaxSignificantDigits)

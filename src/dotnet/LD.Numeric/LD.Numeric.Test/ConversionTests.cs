@@ -136,9 +136,8 @@ public class ConversionTests
     [Test]
     public void ToDouble_DenormalBoundary()
     {
-        // -324 지수는 5e-324(비정규화 최솟값)로 별도 처리됨
-        var positive = BigDouble.FromMantissaExponentNoNormalize(1, -324);
-        var negative = BigDouble.FromMantissaExponentNoNormalize(-1, -324);
+        var positive = BigDouble.FromMantissaExponentNoNormalize(5, -324);
+        var negative = BigDouble.FromMantissaExponentNoNormalize(-5, -324);
         Assert.That(positive.ToDouble(), Is.EqualTo(5e-324));
         Assert.That(negative.ToDouble(), Is.EqualTo(-5e-324));
     }
@@ -234,5 +233,34 @@ public class ConversionTests
     {
         object boxed = new BigDouble(10);
         Assert.That(new BigDouble(5).CompareTo(boxed), Is.EqualTo(-1));
+    }
+
+    [TestCase(1000000000000000.5)]
+    [TestCase(-1000000000000000.5)]
+    [TestCase(1.00000000001)]
+    public void ConversionRange_FractionsSurviveIntegerCorrection(double value)
+    {
+        var number = new BigDouble(value);
+        Assert.That(number.ToDouble(), Is.EqualTo(value));
+        Assert.That(BigDouble.Ceiling(number).ToDouble(), Is.EqualTo(Math.Ceiling(value)));
+        Assert.That(BigDouble.Floor(number).ToDouble(), Is.EqualTo(Math.Floor(value)));
+    }
+
+    [TestCase(1, 0)]
+    [TestCase(4, 1)]
+    [TestCase(8, 2)]
+    [TestCase(-9, -2)]
+    public void ConversionRange_MinimumExponentRoundsByMagnitude(double mantissa, int units)
+    {
+        Assert.That(new BigDouble(mantissa, -324).ToDouble(), Is.EqualTo(units * double.Epsilon));
+    }
+
+    [Test]
+    public void ConversionRange_SubnormalArithmeticKeepsScale()
+    {
+        BigDouble number = double.Epsilon;
+        var scaled = number * new BigDouble(1, 324);
+        Assert.That(scaled.ToDouble(), Is.EqualTo(4.9406564584124654).Within(2e-15));
+        Assert.That(new BigDouble(9, -323).ToDouble(), Is.EqualTo(9e-323));
     }
 }

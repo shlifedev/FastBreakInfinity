@@ -71,7 +71,7 @@ public class EdgeCaseTests
 
         Assert.That(BigDouble.IsNaN(bd), Is.False);
         Assert.That(BigDouble.IsInfinity(bd), Is.False);
-        Assert.That(bd.Mantissa, Is.EqualTo(5.0));
+        Assert.That(bd.Mantissa, Is.EqualTo(4.9406564584124654).Within(2e-15));
         Assert.That(bd.Exponent, Is.EqualTo(-324));
         Assert.That(bd.ToDouble(), Is.EqualTo(double.Epsilon));
     }

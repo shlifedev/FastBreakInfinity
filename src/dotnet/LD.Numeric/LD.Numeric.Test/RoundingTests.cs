@@ -144,4 +144,13 @@ public class RoundingTests
         var count = BigDouble.Floor(money / price);
         Assert.That(count == new BigDouble(9), Is.True, $"기대 9, 실제 {count}");
     }
+
+    [TestCase(1, MidpointRounding.ToPositiveInfinity, 1)]
+    [TestCase(-1, MidpointRounding.ToNegativeInfinity, -1)]
+    [TestCase(1, MidpointRounding.ToZero, 0)]
+    public void TinyDirectedRoundHonorsMode(int sign, MidpointRounding mode, int expected)
+    {
+        var number = new BigDouble(sign, -500);
+        Assert.That(BigDouble.Round(number, mode), Is.EqualTo(new BigDouble(expected)));
+    }
 }
