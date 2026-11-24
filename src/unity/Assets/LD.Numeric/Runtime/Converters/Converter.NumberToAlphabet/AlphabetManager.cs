@@ -1,16 +1,27 @@
 using System;
-using System.Collections.Concurrent;
+using System.Threading;
 
 namespace LD.Numeric.IdleNumber
 {
     public static class AlphabetManager
     {
         private const int MaxUnitLength = 16;
+        private const int CacheSize = 1024;
 
-        static ConcurrentDictionary<long, string> unitCache =
-            new ConcurrentDictionary<long, string>();
-        static ConcurrentDictionary<string, long> reverseUnitCache =
-            new ConcurrentDictionary<string, long>();
+        private sealed class CacheEntry
+        {
+            public readonly long Index;
+            public readonly string Unit;
+
+            public CacheEntry(long index, string unit)
+            {
+                Index = index;
+                Unit = unit;
+            }
+        }
+
+        private static readonly CacheEntry[] UnitCache = new CacheEntry[CacheSize];
+        private static readonly CacheEntry[] ReverseUnitCache = new CacheEntry[CacheSize];
 
 #if UNITY_EDITOR
         [UnityEngine.RuntimeInitializeOnLoadMethod(
@@ -19,8 +30,8 @@ namespace LD.Numeric.IdleNumber
 #endif
         internal static void Reset()
         {
-            unitCache.Clear();
-            reverseUnitCache.Clear();
+            Array.Clear(UnitCache, 0, UnitCache.Length);
+            Array.Clear(ReverseUnitCache, 0, ReverseUnitCache.Length);
         }
 
         /// <summary>
@@ -31,14 +42,15 @@ namespace LD.Numeric.IdleNumber
         {
             if (string.IsNullOrEmpty(unit))
                 return 0;
-            if (reverseUnitCache.TryGetValue(unit, out var cached))
+            int slot = unit.GetHashCode() & (CacheSize - 1);
+            var cached = Volatile.Read(ref ReverseUnitCache[slot]);
+            if (cached != null && cached.Unit == unit)
             {
-                return cached;
+                return cached.Index;
             }
 
-            long index = GetIndexFromUnitUncached(unit.AsSpan());
-            reverseUnitCache[unit] = index;
-
+            long index = GetIndexFromUnit(unit.AsSpan());
+            CacheUnit(index, unit, slot);
             return index;
         }
 
@@ -47,12 +59,7 @@ namespace LD.Numeric.IdleNumber
             if (unit.IsEmpty)
                 return 0;
 
-            return GetIndexFromUnitUncached(unit);
-        }
-
-        private static long GetIndexFromUnitUncached(ReadOnlySpan<char> unit)
-        {
-            long index = 0;
+            long index = -1;
             foreach (char c in unit)
             {
                 // 소문자/공백이 c-'A' 계산을 그대로 타면 쓰레기 지수가 됨 ("1.5a" → 1.5e99)
@@ -62,11 +69,8 @@ namespace LD.Numeric.IdleNumber
                         "알파벳 단위는 대문자 A~Z만 허용됩니다 => " + unit.ToString()
                     );
                 }
-                index = index * 26 + (c - 'A' + 1);
+                index = checked((index + 1) * 26 + (c - 'A'));
             }
-
-            // 1-indexed → 0-indexed 변환 (A=1→0, B=2→1, AA=27→26)
-            index -= 1;
 
             return index;
         }
@@ -78,9 +82,10 @@ namespace LD.Numeric.IdleNumber
         {
             if (index < 0)
                 return string.Empty;
-            if (unitCache.TryGetValue(index, out var cached))
+            var cached = Volatile.Read(ref UnitCache[index & (CacheSize - 1)]);
+            if (cached != null && cached.Index == index)
             {
-                return cached;
+                return cached.Unit;
             }
 
             Span<char> buffer = stackalloc char[MaxUnitLength];
@@ -93,9 +98,15 @@ namespace LD.Numeric.IdleNumber
             }
 
             string unit = buffer.Slice(position).ToString();
-            unitCache[originalIndex] = unit;
-            reverseUnitCache[unit] = originalIndex;
+            CacheUnit(originalIndex, unit, unit.GetHashCode() & (CacheSize - 1));
             return unit;
+        }
+
+        private static void CacheUnit(long index, string unit, int reverseSlot)
+        {
+            var entry = new CacheEntry(index, unit);
+            Volatile.Write(ref UnitCache[index & (CacheSize - 1)], entry);
+            Volatile.Write(ref ReverseUnitCache[reverseSlot], entry);
         }
 
         public static string GetAlphabetUnit(int index) => GetAlphabetUnit((long)index);

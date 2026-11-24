@@ -141,6 +141,16 @@ public class AlphabetConverterTests
     }
 
     [Test]
+    public void BigDouble_LastAlphabetUnit_ProvidesEachRepresentableResult()
+    {
+        string lastUnit = BigDouble.GetAlphabetUnit(long.MaxValue);
+        Assert.That(BigDouble.GetNumberFromUnitName(lastUnit), Is.EqualTo(long.MaxValue / 3));
+        Assert.That(BigDouble.GetExponentFromUnitName(lastUnit), Is.EqualTo(long.MaxValue - 1));
+        Assert.Throws<OverflowException>(() => BigDouble.GetExponentFromAlphabetUnit(lastUnit));
+        Assert.Throws<OverflowException>(() => BigDouble.GetExponentFromUnitName("AFEPVDFLPDCJTC"));
+    }
+
+    [Test]
     public void BigDouble_GetAlphabetUnit_FromExponent()
     {
         Assert.That(BigDouble.GetAlphabetUnit(3), Is.EqualTo("A"));
