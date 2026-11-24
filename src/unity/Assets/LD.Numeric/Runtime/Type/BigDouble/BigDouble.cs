@@ -276,32 +276,46 @@ namespace LD.Numeric.IdleNumber
             return result;
         }
 
-        internal string CreateString(int decimalCount)
+        internal string CreateString(int decimalCount) => FormatForDisplay(decimalCount);
+
+        private string FormatForDisplay(int? fixedDecimalCount)
         {
-            // AdjustedMantissa의 3자리 단위 보정은 알파벳 표기용이라 음수 지수에 적용하면
-            // 0.5가 500으로 표시됨. 1 미만 값은 double 그대로 출력
+            if (!IsFinite(mantissa))
+                return mantissa.ToString(CultureInfo.InvariantCulture);
+            if (exponent < DoubleExpMin)
+                return ToStringMantissaExponent();
             if (exponent < 0)
-            {
                 return ToDouble().ToString(CultureInfo.InvariantCulture);
+
+            long unitNumber = exponent / ExponentUnit;
+            double adjusted = ScaleForAlphabetUnit(mantissa);
+            int decimals = fixedDecimalCount ?? GetDisplayDecimals(adjusted, unitNumber);
+            if (decimals <= 12)
+            {
+                // 스케일링한 999.5는 999.4999999999999가 될 수 있으므로 원래 가수에서 중점을 비교한다.
+                double scale = PowersOf10.Lookup(exponent % ExponentUnit + decimals);
+                double magnitude = Math.Abs(mantissa);
+                double lower = Math.Floor(magnitude * scale);
+                if (magnitude >= (lower + 0.5) / scale)
+                    lower++;
+                adjusted = (mantissa < 0 ? -lower : lower) / PowersOf10.Lookup(decimals);
+            }
+            if (Math.Abs(adjusted) >= 1000)
+            {
+                adjusted /= 1000;
+                unitNumber++;
             }
 
-            var (adjustedMantissa, displayExponent) = AdjustedMantissaForDisplay();
-            return CreateString(decimalCount, adjustedMantissa, displayExponent);
+            decimals = fixedDecimalCount ?? GetDisplayDecimals(adjusted, unitNumber);
+            string digits = adjusted.OptimizeToString(decimals);
+            return unitNumber == 0
+                ? digits
+                : digits + AlphabetManager.GetAlphabetUnit(unitNumber - 1);
         }
 
-        private static string CreateString(
-            int decimalCount,
-            double adjustedMantissa,
-            long displayExponent
-        )
+        private static int GetDisplayDecimals(double adjusted, long unitNumber)
         {
-            if (displayExponent < 3)
-            {
-                return adjustedMantissa.OptimizeToString(decimalCount);
-            }
-
-            return adjustedMantissa.OptimizeToString(decimalCount)
-                + AlphabetManager.GetAlphabetUnitFromExponent(displayExponent);
+            return unitNumber == 0 ? 0 : Math.Max(0, 3 - NumberUtility.GetDigits(adjusted));
         }
 
         public string ToStringMantissaExponent()
@@ -311,38 +325,7 @@ namespace LD.Numeric.IdleNumber
                 + exponent.ToString(CultureInfo.InvariantCulture);
         }
 
-        public override string ToString()
-        {
-            // 1 미만 값은 알파벳 단위/소수 자리 규칙을 적용하지 않고 double 그대로 표시한다.
-            if (exponent < 0)
-            {
-                return ToDouble().ToString(CultureInfo.InvariantCulture);
-            }
-
-            var (adjustedMantissa, displayExponent) = AdjustedMantissaForDisplay();
-            var digits = NumberUtility.GetDigits(adjustedMantissa);
-            int decimalCount = 0;
-            switch (digits)
-            {
-                case 0:
-                    decimalCount = 0;
-                    break;
-                case 1:
-                    decimalCount = 2;
-                    break;
-                case 2:
-                    decimalCount = 1;
-                    break;
-                case 3:
-                    decimalCount = 0;
-                    break;
-                default:
-                    break;
-            }
-            if (exponent <= 2 && mantissa > -10 && mantissa < 10)
-                decimalCount = 0;
-            return CreateString(decimalCount, adjustedMantissa, displayExponent);
-        }
+        public override string ToString() => FormatForDisplay(null);
 
         public static BigDouble Abs(BigDouble value)
         {
