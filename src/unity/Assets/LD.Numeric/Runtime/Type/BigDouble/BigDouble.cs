@@ -661,11 +661,8 @@ namespace LD.Numeric.IdleNumber
 
         public override int GetHashCode()
         {
-            // Equals는 mantissa 0이면 지수를 무시하므로 해시도 지수를 무시해야 계약이 성립
-            if (IsZero(Mantissa))
-            {
-                return 0;
-            }
+            if (Mantissa == 0 || !IsFinite(Mantissa))
+                return Mantissa.GetHashCode();
             unchecked
             {
                 return (Mantissa.GetHashCode() * 397) ^ Exponent.GetHashCode();
@@ -674,41 +671,43 @@ namespace LD.Numeric.IdleNumber
 
         public bool Equals(BigDouble other)
         {
-            return !IsNaN(this)
-                && !IsNaN(other)
-                && (
-                    AreSameInfinity(this, other)
-                    || (IsZero(Mantissa) && IsZero(other.Mantissa))
-                    || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa)
-                );
+            return Mantissa.Equals(other.Mantissa)
+                && (Exponent == other.Exponent || Mantissa == 0 || !IsFinite(Mantissa));
         }
 
         /// <summary>
-        /// Relative comparison with tolerance being adjusted with greatest exponent.
-        /// <para>
-        /// For example, if you put in 1e-9, then any number closer to the larger number
-        /// than (larger number) * 1e-9 will be considered equal.
-        /// </para>
+        /// Compares the absolute difference to the larger magnitude times a nonnegative tolerance.
+        /// NaN never matches. Infinity matches only infinity of the same sign.
         /// </summary>
         public bool Equals(BigDouble other, double tolerance)
         {
-            return !IsNaN(this)
-                && !IsNaN(other)
-                && (
-                    AreSameInfinity(this, other)
-                    || Abs(this - other) <= Max(Abs(this), Abs(other)) * tolerance
-                );
-        }
+            if (!(tolerance >= 0) || IsNaN(this) || IsNaN(other))
+                return false;
+            if (Equals(other))
+                return true;
+            if (tolerance == 0 || IsInfinity(this) || IsInfinity(other))
+                return false;
+            if (Mantissa == 0 || other.Mantissa == 0)
+                return tolerance >= 1;
 
-        private static bool AreSameInfinity(BigDouble first, BigDouble second)
-        {
-            return IsPositiveInfinity(first) && IsPositiveInfinity(second)
-                || IsNegativeInfinity(first) && IsNegativeInfinity(second);
+            bool sameSign = (Mantissa > 0) == (other.Mantissa > 0);
+            if (tolerance == 1)
+                return sameSign;
+
+            var high = Exponent >= other.Exponent ? this : other;
+            var low = Exponent >= other.Exponent ? other : this;
+            ulong gap = unchecked((ulong)(high.Exponent - low.Exponent));
+            if (gap > MaxSignificantDigits)
+                return tolerance > 1;
+
+            var scaled = high.Mantissa * PowersOf10.Lookup((long)gap);
+            return Math.Abs(scaled - low.Mantissa)
+                <= Math.Max(Math.Abs(scaled), Math.Abs(low.Mantissa)) * tolerance;
         }
 
         public static bool operator ==(BigDouble left, BigDouble right)
         {
-            return left.Equals(right);
+            return !IsNaN(left) && left.Equals(right);
         }
 
         public static bool operator !=(BigDouble left, BigDouble right)
