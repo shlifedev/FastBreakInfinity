@@ -270,12 +270,12 @@ namespace LD.Numeric.IdleNumber
             if (decimals <= 12)
             {
                 // 스케일링한 999.5는 999.4999999999999가 될 수 있으므로 원래 가수에서 중점을 비교한다.
-                double scale = FastDouble.Pow10((int)(exponent % ExponentUnit) + decimals);
+                double scale = PowersOf10.Lookup(exponent % ExponentUnit + decimals);
                 double magnitude = Math.Abs(mantissa);
                 double lower = Math.Floor(magnitude * scale);
                 if (magnitude >= (lower + 0.5) / scale)
                     lower++;
-                adjusted = (mantissa < 0 ? -lower : lower) / FastDouble.Pow10(decimals);
+                adjusted = (mantissa < 0 ? -lower : lower) / PowersOf10.Lookup(decimals);
             }
             if (Math.Abs(adjusted) >= 1000)
             {
