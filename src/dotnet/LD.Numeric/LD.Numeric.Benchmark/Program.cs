@@ -1,35 +1,39 @@
 using System;
 using System.IO;
+using System.Linq;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.CsProj;
 using BenchmarkDotNet.Toolchains.DotNetCli;
-using BenchmarkDotNet.Toolchains.MonoAotLLVM;
 using LD.Numeric.Benchmark;
 
-var dotnetCliPath =
-    Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_DOTNET")
-    ?? Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
-if (string.IsNullOrWhiteSpace(dotnetCliPath) || !File.Exists(dotnetCliPath))
+var dotnetCliPath = GetHostPath("LD_NUMERIC_BENCHMARK_DOTNET") ?? GetHostPath("DOTNET_HOST_PATH");
+var targetFramework = Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_TFM");
+var name = Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_NAME");
+IConfig config = DefaultConfig.Instance;
+if (dotnetCliPath != null || targetFramework != null || name != null)
 {
-    dotnetCliPath = "/Users/shlifedev/.dotnet/dotnet";
+    var toolchain = CsProjCoreToolchain.From(
+        new NetCoreAppSettings(
+            targetFrameworkMoniker: targetFramework ?? "net10.0",
+            runtimeFrameworkVersion: null,
+            name: name ?? ".NET 10",
+            customDotNetCliPath: dotnetCliPath
+        )
+    );
+    config = config.AddJob(Job.Default.WithToolchain(toolchain));
 }
 
-var toolchain = CsProjCoreToolchain.From(
-    new NetCoreAppSettings(
-        targetFrameworkMoniker: Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_TFM")
-            ?? "net10.0",
-        runtimeFrameworkVersion: null,
-        name: Environment.GetEnvironmentVariable("LD_NUMERIC_BENCHMARK_NAME") ?? ".NET 10",
-        customDotNetCliPath: dotnetCliPath,
-        packagesPath: null,
-        customRuntimePack: null,
-        aotCompilerPath: null,
-        aotCompilerMode: default
-    )
-);
+var summaries = BenchmarkSwitcher
+    .FromAssembly(typeof(BigDoubleBenchmarks).Assembly)
+    .Run(args, config);
+return summaries.Any(s => s.HasCriticalValidationErrors || s.Reports.Any(report => !report.Success))
+    ? 1
+    : 0;
 
-var config = DefaultConfig.Instance.AddJob(Job.Default.WithToolchain(toolchain));
-
-BenchmarkSwitcher.FromAssembly(typeof(BigDoubleBenchmarks).Assembly).Run(args, config);
+static string? GetHostPath(string variable)
+{
+    var path = Environment.GetEnvironmentVariable(variable);
+    return File.Exists(path) ? path : null;
+}
