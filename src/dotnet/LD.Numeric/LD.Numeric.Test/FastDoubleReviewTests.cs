@@ -85,6 +85,28 @@ public class FastDoubleReviewTests
         Assert.That((-0.001).OptimizeToString(2), Is.EqualTo("-0.00"));
     }
 
+    [TestCase(0.5000152587890625, 17, "0.50001525878906250")]
+    [TestCase(-2.5000152587890625, 17, "-2.50001525878906250")]
+    [TestCase(0.49591827392578125, 16, "0.4959182739257813")]
+    [TestCase(-0.500003814697265625, 17, "-0.50000381469726563")]
+    [TestCase(0.000000000000000009, 17, "0.00000000000000001")]
+    [TestCase(double.Epsilon, 17, "0.00000000000000000")]
+    public void OptimizeToString_HighPrecision_RoundsTheStoredFraction(
+        double value,
+        int places,
+        string expected
+    )
+    {
+        Assert.That(value.OptimizeToString(places), Is.EqualTo(expected));
+    }
+
+    [TestCase(0, "-0")]
+    [TestCase(2, "-0.00")]
+    public void OptimizeToString_NegativeZero_PreservesSign(int places, string expected)
+    {
+        Assert.That((-0.0).OptimizeToString(places), Is.EqualTo(expected));
+    }
+
     // ===== F5: substring 할당 없이 파싱할 수 있는 ReadOnlySpan 오버로드 =====
 
     [Test]

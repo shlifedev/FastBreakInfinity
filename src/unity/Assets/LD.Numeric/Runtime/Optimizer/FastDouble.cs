@@ -172,7 +172,7 @@ namespace LD.Numeric.IdleNumber
 
             Span<char> buffer = stackalloc char[40];
             int pos = 0;
-            if (value < 0)
+            if (BitConverter.DoubleToInt64Bits(value) < 0)
             {
                 buffer[pos++] = '-';
                 value = -value;
@@ -187,8 +187,11 @@ namespace LD.Numeric.IdleNumber
 
             long integerPart = (long)value;
             double scale = Pow10(decimalPlaces);
-            long fraction = (long)
-                Math.Round((value - integerPart) * scale, MidpointRounding.AwayFromZero);
+            double fractionalPart = value - integerPart;
+            long fraction =
+                decimalPlaces >= 16
+                    ? RoundHighPrecisionFraction(fractionalPart, decimalPlaces, (long)scale)
+                    : (long)Math.Round(fractionalPart * scale, MidpointRounding.AwayFromZero);
             // 소수부 반올림이 자리올림되면 정수부로 캐리 (예: 1.999 → 2.00)
             if (fraction >= (long)scale)
             {
@@ -200,6 +203,28 @@ namespace LD.Numeric.IdleNumber
             buffer[pos++] = '.';
             pos += IntegerToString(fraction, buffer.Slice(pos), decimalPlaces);
             return buffer.Slice(0, pos).ToString();
+        }
+
+        private static long RoundHighPrecisionFraction(double fraction, int places, long scale)
+        {
+            // fraction = significand * 2^(biasedExponent - 1023 - 52).
+            // 10^places의 2 인수를 약분하면 분자는 53비트 가수 * 5^places라서
+            // 17자리까지는 decimal의 96비트 정수 범위에 정확히 들어간다.
+            long bits = BitConverter.DoubleToInt64Bits(fraction);
+            int biasedExponent = (int)(bits >> 52);
+            int divisorShift = 1023 + 52 - biasedExponent - places;
+            // 분자가 2^93보다 작으므로 이 구간의 몫은 0.5 미만이다.
+            if (divisorShift >= 95)
+                return 0;
+
+            long significand = (bits & ((1L << 52) - 1)) | (1L << 52);
+            decimal numerator = (decimal)significand * (scale >> places);
+            // 두 인수를 각각 long으로 만들면 2^94까지 정확히 계산할 수 있다.
+            decimal divisor =
+                (decimal)(1L << (divisorShift / 2)) * (1L << ((divisorShift + 1) / 2));
+            decimal remainder = numerator % divisor;
+            long whole = (long)((numerator - remainder) / divisor);
+            return remainder * 2 >= divisor ? whole + 1 : whole;
         }
 
         private static int IntegerToString(long value, Span<char> buffer, int minLength = 1)
