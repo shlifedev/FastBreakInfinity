@@ -61,6 +61,8 @@ if (gold >= cost)
 
 `BigDouble`은 `+`, `-`, `*`, `/` 같은 기본 사칙연산과 `>`, `<`, `>=`, `<=` 같은 비교 연산을 지원합니다.
 
+`double`과 마찬가지로 `NaN == NaN`은 거짓이고 `NaN.Equals(NaN)`은 참이므로 NaN을 딕셔너리 키로 사용할 수 있습니다. `Equals(other, tolerance)`는 두 수의 차이를 절댓값이 더 큰 수에 상대적으로 비교합니다. 허용 오차는 0 이상이어야 하며 NaN은 항상 거짓, 무한대는 부호가 같을 때만 참입니다.
+
 ```cs
 new BigDouble(999).ToString();    // "999"
 new BigDouble(1000).ToString();   // "1.00A"

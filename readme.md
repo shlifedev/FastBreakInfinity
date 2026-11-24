@@ -62,6 +62,8 @@ if (gold >= cost)
 
 `BigDouble` supports normal arithmetic operators such as `+`, `-`, `*`, `/` and comparison operators such as `>`, `<`, `>=`, `<=`.
 
+As with `double`, `NaN == NaN` is false and `NaN.Equals(NaN)` is true, so NaN can serve as a dictionary key. `Equals(other, tolerance)` compares the difference relative to the larger magnitude. It requires a nonnegative tolerance, excludes NaN, and matches infinities only when their signs agree.
+
 ```cs
 new BigDouble(999).ToString();    // "999"
 new BigDouble(1000).ToString();   // "1.00A"
