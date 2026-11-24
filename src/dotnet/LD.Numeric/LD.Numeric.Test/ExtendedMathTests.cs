@@ -378,4 +378,58 @@ public class ExtendedMathTests
         Assert.That(result.Mantissa, Is.EqualTo(2));
         Assert.That(result.Exponent, Is.EqualTo(500000000000000000L));
     }
+
+    [TestCase(9007199254740993L)]
+    [TestCase(long.MaxValue)]
+    public void WideFractionalPowerUsesExactOddExponent(long exponent)
+    {
+        var result = BigDouble.Pow(new BigDouble(4, exponent), 0.5);
+        Assert.That(result.Mantissa, Is.EqualTo(Math.Sqrt(40)).Within(2e-14));
+        Assert.That(result.Exponent, Is.EqualTo(exponent / 2));
+    }
+
+    [TestCase(9.999999999999998)]
+    [TestCase(9.99999999999999)]
+    public void NearOneLogResolvesSmallDistancesBelowOne(double mantissa)
+    {
+        var value = new BigDouble(mantissa, -1);
+        var delta = (mantissa - 10) / 10;
+        double ln = delta * (1 - delta / 2);
+        Assert.That(BigDouble.Log(2, value), Is.EqualTo(Math.Log(2) / ln).Within(1e-13).Percent);
+        Assert.That(BigDouble.Log10(value), Is.EqualTo(ln / Math.Log(10)).Within(1e-13).Percent);
+    }
+
+    [Test]
+    public void NearOneIntegerPowersRemainReciprocal()
+    {
+        var value = new BigDouble(9.999999999999998, -1);
+        const long power = 10000000000000000;
+        var inverse = BigDouble.Pow(value, -power);
+        var forward = BigDouble.Pow(value, power);
+        Assert.That(inverse.ToDouble(), Is.EqualTo(5.90829230394221).Within(1e-11));
+        Assert.That((inverse * forward).ToDouble(), Is.EqualTo(1).Within(2e-14));
+    }
+
+    [Test]
+    public void NearOneLogAboveOneKeepsBasePrecision()
+    {
+        var value = new BigDouble(Math.BitIncrement(1.0));
+        Assert.That(
+            BigDouble.Log(2, value),
+            Is.EqualTo(Math.Log(2) / Math.Log(value.Mantissa)).Within(1e-13).Percent
+        );
+    }
+
+    [TestCase(0.1, 2.2387211385683396, 900719925474099L)]
+    [TestCase(-0.1, 4.466835921509631, -900719925474100L)]
+    public void WideFractionalPowerPreservesBinaryFraction(
+        double power,
+        double mantissa,
+        long exponent
+    )
+    {
+        var result = BigDouble.Pow(new BigDouble(1, 9007199254740993L), power);
+        Assert.That(result.Mantissa, Is.EqualTo(mantissa).Within(3e-15));
+        Assert.That(result.Exponent, Is.EqualTo(exponent));
+    }
 }

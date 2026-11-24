@@ -821,12 +821,20 @@ namespace LD.Numeric.IdleNumber
 
         public static double AbsLog10(BigDouble value)
         {
-            return value.Exponent + Math.Log10(Math.Abs(value.Mantissa));
+            var mantissa = Math.Abs(value.Mantissa);
+            if (value.Exponent == -1 && mantissa >= 5 && mantissa < 10)
+            {
+                // Compute log(1 + delta) without rounding away the distance below one.
+                double delta = (mantissa - 10) / 10;
+                double rounded = 1 + delta;
+                return Math.Log(rounded) * (delta / (rounded - 1)) / Ln10;
+            }
+            return value.Exponent + Math.Log10(mantissa);
         }
 
         public static double Log10(BigDouble value)
         {
-            return value.Exponent + Math.Log10(value.Mantissa);
+            return value.Mantissa < 0 ? double.NaN : AbsLog10(value);
         }
 
         public static double Log(BigDouble value, BigDouble @base)
@@ -929,6 +937,12 @@ namespace LD.Numeric.IdleNumber
                 }
             }
 
+            if (value.Exponent == -1 && magnitude >= 5)
+            {
+                var nearOnePower = Pow10(power * AbsLog10(value));
+                return negative ? -nearOnePower : nearOnePower;
+            }
+
             // Keep each intermediate normalized when the mantissa power exceeds double's range.
             var factor = power < 0 ? Reciprocate(value) : value;
             var result = One;
@@ -968,7 +982,36 @@ namespace LD.Numeric.IdleNumber
                 return new BigDouble(Math.Pow(Math.Abs(value.Mantissa), power));
 
             var exponentProduct = value.Exponent * power;
-            if (exponentProduct >= long.MinValue && exponentProduct < -(double)long.MinValue)
+            if (
+                !IsInteger(power)
+                && Math.Abs(exponentProduct) >= 1L << 32
+                && Math.Abs(exponentProduct) <= -(double)long.MinValue
+            )
+            {
+                // A double product at this scale can lose significant fractional digits.
+                // Recover the exact integer and fractional parts using the binary significand.
+                long bits = BitConverter.DoubleToInt64Bits(Math.Abs(power));
+                long significand = (1L << 52) | (bits & ((1L << 52) - 1));
+                int shift = 1075 - (int)(bits >> 52);
+                BigInteger product =
+                    (BigInteger)value.Exponent * (power < 0 ? -significand : significand);
+                var whole = BigInteger.DivRem(product, BigInteger.One << shift, out var remainder);
+                var fraction = (double)remainder * Math.Pow(2, -shift);
+                var scaled = Normalize(
+                    Math.Pow(Math.Abs(value.Mantissa), power) * Math.Pow(10, fraction),
+                    0
+                );
+                if (IsFinite(scaled.Mantissa) && scaled.Mantissa != 0)
+                {
+                    whole += scaled.Exponent;
+                    if (whole > long.MaxValue)
+                        return PositiveInfinity;
+                    if (whole < long.MinValue)
+                        return Zero;
+                    return FromMantissaExponentNoNormalize(scaled.Mantissa, (long)whole);
+                }
+            }
+            else if (exponentProduct >= long.MinValue && exponentProduct < -(double)long.MinValue)
             {
                 long exponent = (long)exponentProduct;
                 var scaledMantissa =
@@ -979,9 +1022,7 @@ namespace LD.Numeric.IdleNumber
             }
 
             // Finite integral doubles outside the long range are even.
-            double logMagnitude =
-                value.Exponent == -1 ? Math.Log10(Math.Abs(value.Mantissa) / 10) : AbsLog10(value);
-            return Pow10(power * logMagnitude);
+            return Pow10(power * AbsLog10(value));
         }
 
         public static BigDouble Factorial(BigDouble value)
