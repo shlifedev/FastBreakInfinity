@@ -18,6 +18,5 @@
 
     <ItemGroup>
         <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-        <PackageReference Include="ZString" Version="2.6.0" />
     </ItemGroup>
 </Project>
