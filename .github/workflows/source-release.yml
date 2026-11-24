@@ -39,16 +39,23 @@ jobs:
       - name: Resolve release tag
         id: release
         shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.tag_name }}
         run: |
-          tag_name="${{ github.event.inputs.tag_name }}"
+          tag_name="$REQUESTED_TAG"
 
           if [ -z "$tag_name" ]; then
-            if [ "${{ github.ref_type }}" != "tag" ]; then
+            if [ "$GITHUB_REF_TYPE" != "tag" ]; then
               echo "tag_name is required when running this workflow manually from a branch." >&2
               exit 1
             fi
 
-            tag_name="${{ github.ref_name }}"
+            tag_name="$GITHUB_REF_NAME"
+          fi
+
+          if [[ "$tag_name" == -* ]] || ! git check-ref-format "refs/tags/$tag_name"; then
+            echo "Expected a valid release tag." >&2
+            exit 1
           fi
 
           asset_version="${tag_name//\//-}"
@@ -59,8 +66,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ steps.release.outputs.tag_name }}
+          ref: refs/tags/${{ steps.release.outputs.tag_name }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -96,19 +104,19 @@ jobs:
       - name: Create source archives
         id: archive
         shell: bash
+        env:
+          ASSET_VERSION: ${{ steps.release.outputs.asset_version }}
         run: |
-          tag_name="${{ steps.release.outputs.tag_name }}"
-          asset_version="${{ steps.release.outputs.asset_version }}"
-          archive_prefix="LD.Numeric-$asset_version/"
-          zip_path="dist/LD.Numeric-$asset_version-source.zip"
-          tar_path="dist/LD.Numeric-$asset_version-source.tar.gz"
+          archive_prefix="LD.Numeric-$ASSET_VERSION/"
+          zip_path="dist/LD.Numeric-$ASSET_VERSION-source.zip"
+          tar_path="dist/LD.Numeric-$ASSET_VERSION-source.tar.gz"
           checksums_path="dist/SHA256SUMS.txt"
 
           mkdir -p dist
 
           git archive --format=zip --prefix="$archive_prefix" --output="$zip_path" HEAD
           git archive --format=tar --prefix="$archive_prefix" HEAD | gzip -n > "$tar_path"
-          sha256sum "$zip_path" "$tar_path" > "$checksums_path"
+          (cd dist && sha256sum "${zip_path##*/}" "${tar_path##*/}") > "$checksums_path"
 
           echo "zip_path=$zip_path" >> "$GITHUB_OUTPUT"
           echo "tar_path=$tar_path" >> "$GITHUB_OUTPUT"

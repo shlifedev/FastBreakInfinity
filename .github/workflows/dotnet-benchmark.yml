@@ -71,7 +71,7 @@ jobs:
           --project LD.Numeric.Benchmark/LD.Numeric.Benchmark.csproj
           --no-build
           --
-          --filter "${{ env.BENCHMARK_FILTER }}"
+          --filter "$BENCHMARK_FILTER"
 
       - name: Upload benchmark artifacts
         if: always()
