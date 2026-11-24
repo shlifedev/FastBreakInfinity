@@ -47,7 +47,7 @@ LD.Numeric은 [BreakInfinity.cs](https://github.com/Razenpok/BreakInfinity.cs)�
 **FastDouble** (`Optimizer/FastDouble.cs`)
 - `double.Parse`/`ToString` 대체용 고성능 파서
 - `ParseDouble(string, maxDecimalPlaces)`: 지정된 정밀도로 빠른 파싱
-- `OptimizeToString()`: ZString 기반 저GC 문자열 변환
+- `OptimizeToString()`: 스택 버퍼를 사용하는 저GC 문자열 변환
 
 **AlphabetManager** (`Converters/Converter.NumberToAlphabet/`)
 - 지수를 알파벳 단위로 변환 (1000=A, 1000000=B, ... AA, AB...)
@@ -56,7 +56,7 @@ LD.Numeric은 [BreakInfinity.cs](https://github.com/Razenpok/BreakInfinity.cs)�
 
 ### 의존성
 
-- `ZString`: 저GC 문자열 포맷팅 (Cysharp.Text)
+- `BenchmarkDotNet`: 런타임 성능 측정
 - `NUnit`: 테스트 프레임워크
 
 ## Code Style
