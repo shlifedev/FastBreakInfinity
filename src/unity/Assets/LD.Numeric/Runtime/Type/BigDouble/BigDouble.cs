@@ -100,12 +100,12 @@ namespace LD.Numeric.IdleNumber
 
             if (absMantissa >= 10 && absMantissa < 100)
             {
-                return FromMantissaExponentNoNormalize(mantissa / 10, exponent + 1);
+                return WithExponentOffset(mantissa / 10, exponent, 1);
             }
 
             if (absMantissa >= 0.1 && absMantissa < 1)
             {
-                return FromMantissaExponentNoNormalize(mantissa * 10, exponent - 1);
+                return WithExponentOffset(mantissa * 10, exponent, -1);
             }
 
             long tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
@@ -131,7 +131,30 @@ namespace LD.Numeric.IdleNumber
                 mantissa *= 10;
                 tempExponent--;
             }
-            return FromMantissaExponentNoNormalize(mantissa, exponent + tempExponent);
+            return WithExponentOffset(mantissa, exponent, tempExponent);
+        }
+
+        private static BigDouble WithExponentOffset(double mantissa, long exponent, long offset)
+        {
+            if (offset > 0 && exponent > long.MaxValue - offset)
+                return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
+            if (offset < 0 && exponent < long.MinValue - offset)
+                return Zero;
+            return FromMantissaExponentNoNormalize(mantissa, exponent + offset);
+        }
+
+        // An intermediate exponent can be one step out of range before the mantissa is normalized.
+        private static BigDouble NormalizeWideExponent(double mantissa, decimal exponent)
+        {
+            var normalized = Normalize(mantissa, 0);
+            if (!IsFinite(normalized.Mantissa) || IsZero(normalized.Mantissa))
+                return normalized;
+            exponent += normalized.Exponent;
+            if (exponent > long.MaxValue)
+                return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
+            if (exponent < long.MinValue)
+                return Zero;
+            return FromMantissaExponentNoNormalize(normalized.Mantissa, (long)exponent);
         }
 
         public double Mantissa => mantissa;
@@ -471,21 +494,24 @@ namespace LD.Numeric.IdleNumber
                 smaller = left;
             }
 
-            if (bigger.Exponent - smaller.Exponent > MaxSignificantDigits)
+            if (unchecked((ulong)(bigger.Exponent - smaller.Exponent)) > MaxSignificantDigits)
             {
                 return bigger;
             }
 
             // 정수로 스케일업 후 연산하여 정밀도 유지 (예: 299 + 18)
-            return Normalize(
-                Math.Round(
-                    AdditionPrecisionFactor * bigger.Mantissa
-                        + AdditionPrecisionFactor
-                            * smaller.Mantissa
-                            * PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)
-                ),
-                bigger.Exponent - AdditionPrecisionExponent
+            var sum = Math.Round(
+                AdditionPrecisionFactor * bigger.Mantissa
+                    + AdditionPrecisionFactor
+                        * smaller.Mantissa
+                        * PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)
             );
+            if (bigger.Exponent < long.MinValue + AdditionPrecisionExponent)
+                return NormalizeWideExponent(
+                    sum,
+                    (decimal)bigger.Exponent - AdditionPrecisionExponent
+                );
+            return Normalize(sum, bigger.Exponent - AdditionPrecisionExponent);
         }
 
         public static BigDouble Subtract(BigDouble left, BigDouble right)
@@ -504,15 +530,10 @@ namespace LD.Numeric.IdleNumber
             }
             catch (OverflowException)
             {
-                // NaN의 지수는 long.MinValue 센티널이라 여기로 흘러올 수 있음 — Zero로 둔갑 방지
-                if (IsNaN(left) || IsNaN(right))
-                    return NaN;
-
-                // 덧셈 오버플로는 두 지수의 부호가 같을 때만 발생 — 양수 방향이면 Infinity, 음수 방향이면 Zero
-                bool positiveResult = (left.Mantissa > 0) == (right.Mantissa > 0);
-                if (left.Exponent > 0)
-                    return positiveResult ? PositiveInfinity : NegativeInfinity;
-                return Zero;
+                return NormalizeWideExponent(
+                    left.Mantissa * right.Mantissa,
+                    (decimal)left.Exponent + right.Exponent
+                );
             }
 
             return Normalize(left.Mantissa * right.Mantissa, newExponent);
@@ -533,12 +554,7 @@ namespace LD.Numeric.IdleNumber
             }
             catch (OverflowException)
             {
-                if (IsNaN(left) || IsNaN(right) || double.IsNaN(mantissa))
-                    return NaN;
-
-                if (right.Exponent < 0)
-                    return mantissa > 0 ? PositiveInfinity : NegativeInfinity;
-                return Zero;
+                return NormalizeWideExponent(mantissa, (decimal)left.Exponent - right.Exponent);
             }
 
             return Normalize(mantissa, newExponent);
@@ -546,7 +562,7 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Reciprocate(BigDouble value)
         {
-            return Normalize(1.0 / value.Mantissa, -value.Exponent);
+            return Divide(One, value);
         }
 
         public static implicit operator BigDouble(double value)
@@ -1018,11 +1034,11 @@ namespace LD.Numeric.IdleNumber
                 // 음수의 mod는 음수이므로 != 0은 '1 또는 -1'을 의미
                 return Normalize(
                     Math.Sqrt(value.Mantissa) * Sqrt10,
-                    (long)Math.Floor(value.Exponent / 2.0)
+                    value.Exponent / 2 - (value.Exponent < 0 ? 1 : 0)
                 );
             }
 
-            return Normalize(Math.Sqrt(value.Mantissa), (long)Math.Floor(value.Exponent / 2.0));
+            return Normalize(Math.Sqrt(value.Mantissa), value.Exponent / 2);
         }
 
         public static BigDouble Cbrt(BigDouble value)
@@ -1039,21 +1055,24 @@ namespace LD.Numeric.IdleNumber
 
             // floor(e/3) 분해와 짝을 이루는 나머지는 항상 0..2여야 함 — C#의 %는 음수에서
             // 음수 나머지를 줘서 10^(1/3)과 10^(2/3) 보정이 서로 뒤바뀌었음 (예: 1e-4)
-            var mod = ((value.Exponent % 3) + 3) % 3;
+            var mod = value.Exponent % 3;
+            var rootExponent = value.Exponent / 3;
+            if (mod < 0)
+            {
+                mod += 3;
+                rootExponent--;
+            }
             if (mod == 1)
             {
-                return Normalize(newmantissa * CubeRoot10, (long)Math.Floor(value.Exponent / 3.0));
+                return Normalize(newmantissa * CubeRoot10, rootExponent);
             }
 
             if (mod == 2)
             {
-                return Normalize(
-                    newmantissa * TwoThirdsPowerOf10,
-                    (long)Math.Floor(value.Exponent / 3.0)
-                );
+                return Normalize(newmantissa * TwoThirdsPowerOf10, rootExponent);
             }
 
-            return Normalize(newmantissa, (long)Math.Floor(value.Exponent / 3.0));
+            return Normalize(newmantissa, rootExponent);
         }
 
         public static BigDouble Sinh(BigDouble value)
