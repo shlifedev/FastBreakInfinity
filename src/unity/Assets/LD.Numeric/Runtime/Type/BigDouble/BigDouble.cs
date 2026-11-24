@@ -1058,34 +1058,65 @@ namespace LD.Numeric.IdleNumber
 
         public static BigDouble Sinh(BigDouble value)
         {
-            return (Exp(value) - Exp(-value)) / 2;
+            if (value.Exponent < -8)
+                return value;
+            var x = value.ToDouble();
+            if (Math.Abs(x) < 700)
+                return new BigDouble(Math.Sinh(x));
+
+            var magnitude = LargeHyperbolicMagnitude(Math.Abs(x));
+            return x < 0 ? -magnitude : magnitude;
         }
 
         public static BigDouble Cosh(BigDouble value)
         {
-            return (Exp(value) + Exp(-value)) / 2;
+            var x = Math.Abs(value.ToDouble());
+            return x < 700 ? new BigDouble(Math.Cosh(x)) : LargeHyperbolicMagnitude(x);
+        }
+
+        // For x >= 700, exp(-x) contributes less than one bit to sinh and cosh.
+        private static BigDouble LargeHyperbolicMagnitude(double x)
+        {
+            if (double.IsNaN(x))
+                return NaN;
+            if (x >= -(double)long.MinValue * Ln10)
+                return PositiveInfinity;
+            return Exp(new BigDouble(x)) / 2;
         }
 
         public static BigDouble Tanh(BigDouble value)
         {
-            return Sinh(value) / Cosh(value);
+            return value.Exponent < -8 ? value : new BigDouble(Math.Tanh(value.ToDouble()));
         }
 
         public static double Asinh(BigDouble value)
         {
-            return Ln(value + Sqrt(Pow(value, 2) + 1));
+            if (value.Exponent > 150)
+            {
+                var magnitude = Ln(Abs(value)) + Math.Log(2);
+                return value.Mantissa < 0 ? -magnitude : magnitude;
+            }
+            return Math.Asinh(value.ToDouble());
         }
 
         public static double Acosh(BigDouble value)
         {
-            return Ln(value + Sqrt(Pow(value, 2) - 1));
+            if (value.Exponent > 150)
+                return Ln(value) + Math.Log(2);
+            return Math.Acosh(value.Exponent == 0 ? value.Mantissa : value.ToDouble());
         }
 
         public static double Atanh(BigDouble value)
         {
-            if (Abs(value) >= 1)
+            if (Abs(value) >= One)
                 return double.NaN;
-            return Ln((value + 1) / (One - value)) / 2;
+            if (value.Exponent == -1 && Math.Abs(value.Mantissa) >= 5)
+            {
+                // Form 1 - |x| before division by ten rounds the input toward one.
+                double gap = (10 - Math.Abs(value.Mantissa)) / 10;
+                return Math.Sign(value.Mantissa) * (Math.Log(2 - gap) - Math.Log(gap)) / 2;
+            }
+            return Math.Atanh(value.ToDouble());
         }
 
         private static bool IsZero(double value)
