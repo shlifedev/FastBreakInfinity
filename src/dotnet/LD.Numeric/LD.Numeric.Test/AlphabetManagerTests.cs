@@ -50,9 +50,16 @@ public class AlphabetManagerTests
     [TestCase("AA", 26L)]
     [TestCase("ZZ", 701L)]
     [TestCase("AAA", 702L)]
+    [TestCase("CRPXNLSKVLJFHH", long.MaxValue)]
     public void GetIndexFromUnit_KnownBoundaries(string unit, long expected)
     {
         Assert.That(AlphabetManager.GetIndexFromUnit(unit), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void GetIndexFromUnit_FirstUnrepresentableIndex_ThrowsOverflow()
+    {
+        Assert.Throws<OverflowException>(() => AlphabetManager.GetIndexFromUnit("CRPXNLSKVLJFHI"));
     }
 
     [Test]
@@ -121,7 +128,23 @@ public class AlphabetManagerTests
     {
         var first = AlphabetManager.GetAlphabetUnit(12345L);
         var second = AlphabetManager.GetAlphabetUnit(12345L);
-        Assert.That(second, Is.EqualTo(first));
+        Assert.That(second, Is.SameAs(first));
+    }
+
+    [Test]
+    public void GetAlphabetUnit_ProgressingThroughUnits_BoundsRetainedStrings()
+    {
+        var references = Enumerable
+            .Range(10000, 4096)
+            .Select(index => new WeakReference<string>(AlphabetManager.GetAlphabetUnit(index)))
+            .ToArray();
+
+        GC.Collect();
+
+        Assert.That(
+            references.Count(reference => reference.TryGetTarget(out _)),
+            Is.LessThanOrEqualTo(2048)
+        );
     }
 
     [Test]
@@ -133,7 +156,7 @@ public class AlphabetManagerTests
             5000,
             i =>
             {
-                long index = i % 500;
+                long index = (i % 500) + (i % 3) * 1024;
                 var unit = AlphabetManager.GetAlphabetUnit(index);
                 if (AlphabetManager.GetIndexFromUnit(unit) != index)
                 {

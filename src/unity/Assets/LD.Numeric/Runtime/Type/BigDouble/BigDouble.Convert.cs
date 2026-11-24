@@ -16,16 +16,8 @@ namespace LD.Numeric.IdleNumber
 
         public static (long rangeA, long rangeB) GetExponentFromAlphabetUnit(string unit)
         {
-            if (string.IsNullOrEmpty(unit))
-            {
-                throw new ArgumentException("알파벳을 올바르게 입력했나요.. 값이 비어있습니다.");
-            }
-
-            // AlphabetManager는 0-indexed(A=0)이므로 +1해서 1-indexed 값으로 환산.
-            // (int)Math.Pow(26, n) 방식은 7글자 이상 단위에서 int 오버플로가 났음
-            long exponent = AlphabetManager.GetIndexFromUnit(unit) + 1;
-
-            return (exponent * ExponentUnit, exponent * ExponentUnit + 2);
+            long first = GetExponentFromUnitName(unit);
+            return (first, checked(first + (ExponentUnit - 1)));
         }
 
         public static string GetAlphabetUnit(long exponent)
@@ -39,8 +31,12 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static long GetNumberFromUnitName(string unit)
         {
-            var range = GetExponentFromAlphabetUnit(unit);
-            return range.rangeB / ExponentUnit;
+            if (string.IsNullOrEmpty(unit))
+            {
+                throw new ArgumentException("알파벳을 올바르게 입력했나요.. 값이 비어있습니다.");
+            }
+
+            return checked(AlphabetManager.GetIndexFromUnit(unit) + 1);
         }
 
         /// <summary>
@@ -49,7 +45,7 @@ namespace LD.Numeric.IdleNumber
         /// </summary>
         public static long GetExponentFromUnitName(string unit)
         {
-            return GetNumberFromUnitName(unit) * ExponentUnit;
+            return checked(GetNumberFromUnitName(unit) * ExponentUnit);
         }
 
         /// <summary>
