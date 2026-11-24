@@ -30,21 +30,24 @@
 
 ## 빌드와 테스트
 
-명령은 특별한 이유가 없으면 `src/dotnet/LD.Numeric/`에서 실행한다.
+빌드와 테스트는 `src/dotnet/LD.Numeric/`에서 실행한다.
 
 ```bash
 dotnet build LD.Numeric.sln
 dotnet test LD.Numeric.Test/LD.Numeric.Test.csproj
 dotnet test --filter "FullyQualifiedName~TestMethodName"
+```
+
+CI와 같은 범위로 Unity 런타임까지 검사하려면 저장소 루트에서 실행한다.
+
+```bash
 dotnet tool restore
 dotnet csharpier check .
-dotnet csharpier .
 ```
 
 - 일반 변경 후에는 최소한 관련 테스트를 실행한다.
 - 공유 숫자 연산, 파싱, 포매팅, 비교, 변환 로직을 건드렸다면 전체 테스트를 우선 고려한다.
-- 포맷 검사는 `dotnet csharpier check .`를 사용한다.
-- 포맷 적용이 필요할 때만 `dotnet csharpier .`를 실행한다.
+- 포맷 적용이 필요한 파일에만 `dotnet csharpier format <파일 경로>`를 실행한다.
 
 ## 코드 스타일
 

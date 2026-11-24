@@ -16,14 +16,16 @@ dotnet test LD.Numeric.Test/LD.Numeric.Test.csproj
 
 # 특정 테스트만 실행
 dotnet test --filter "FullyQualifiedName~TestMethodName"
+```
 
-# 코드 포맷팅 검사 (CI에서 사용됨)
+저장소 루트에서 Unity 런타임을 포함한 전체 소스의 포맷을 검사한다.
+
+```bash
 dotnet tool restore
 dotnet csharpier check .
-
-# 코드 포맷팅 적용
-dotnet csharpier .
 ```
+
+포맷 적용이 필요한 파일에는 `dotnet csharpier format <파일 경로>`를 사용한다.
 
 ## Architecture
 
