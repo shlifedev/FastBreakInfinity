@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace LD.Numeric.IdleNumber
 {
@@ -17,6 +18,7 @@ namespace LD.Numeric.IdleNumber
             double mantissa = 0;
             long exponent = 0;
             int decimalDigits = 0;
+            int mantissaLength = input.Length;
             bool isExponent = false;
             bool isExponentNegative = false;
             bool isMantissaNegative = false;
@@ -33,6 +35,7 @@ namespace LD.Numeric.IdleNumber
                     {
                         throw new FormatException("잘못된 입력: " + input);
                     }
+                    mantissaLength = index;
                     isExponent = true;
                     continue;
                 }
@@ -76,11 +79,13 @@ namespace LD.Numeric.IdleNumber
                 if (isExponent)
                 {
                     hasExponentDigit = true;
-                    if (exponent > (long.MaxValue - digit) / 10)
+                    // 음수로 누적하면 양수로 표현할 수 없는 long.MinValue의 절댓값도 처리한다.
+                    long limit = isExponentNegative ? long.MinValue : -long.MaxValue;
+                    if (exponent < (limit + digit) / 10)
                     {
                         throw new FormatException("지수가 표현 범위를 벗어남: " + input);
                     }
-                    exponent = exponent * 10 + digit;
+                    exponent = exponent * 10 - digit;
                 }
                 else
                 {
@@ -98,22 +103,28 @@ namespace LD.Numeric.IdleNumber
                 throw new FormatException("잘못된 입력: " + input);
             }
 
-            if (isMantissaNegative)
+            // 정수 누적값과 나눗수가 double에 정확히 들어갈 때만 한 번의 나눗셈으로 복원한다.
+            if (mantissa >= 9007199254740992d || decimalDigits > 22)
             {
-                mantissa = -mantissa;
+                mantissa = double.Parse(
+                    input.AsSpan(0, mantissaLength),
+                    NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                    CultureInfo.InvariantCulture
+                );
+            }
+            else
+            {
+                if (decimalDigits > 0)
+                    mantissa /= FastDouble.Pow10(decimalDigits);
+                if (isMantissaNegative)
+                    mantissa = -mantissa;
             }
 
-            if (decimalDigits > 0)
+            return new BigValueInfo
             {
-                mantissa /= FastDouble.Pow10(decimalDigits);
-            }
-
-            if (isExponentNegative)
-            {
-                exponent = -exponent;
-            }
-
-            return new BigValueInfo() { Exponent = exponent, Mantissa = mantissa };
+                Exponent = isExponentNegative ? exponent : -exponent,
+                Mantissa = mantissa,
+            };
         }
     }
 }
