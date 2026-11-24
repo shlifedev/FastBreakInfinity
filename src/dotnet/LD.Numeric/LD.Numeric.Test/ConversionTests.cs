@@ -263,4 +263,22 @@ public class ConversionTests
         Assert.That(scaled.ToDouble(), Is.EqualTo(4.9406564584124654).Within(2e-15));
         Assert.That(new BigDouble(9, -323).ToDouble(), Is.EqualTo(9e-323));
     }
+
+    [TestCase(1)]
+    [TestCase(-1)]
+    public void BigIntegerRange_PowersOfTenKeepSignAndExponent(int sign)
+    {
+        var value = sign * BigInteger.Pow(10, 400);
+        Assert.That((BigDouble)value, Is.EqualTo(new BigDouble(sign, 400)));
+    }
+
+    [Test]
+    public void BigIntegerRange_MixedDigitsRetainDoublePrecision()
+    {
+        var value = new BigInteger(12345678901234567L) * BigInteger.Pow(10, 400);
+        var converted = (BigDouble)value;
+        Assert.That(converted.Exponent, Is.EqualTo(416));
+        Assert.That(converted.Mantissa, Is.EqualTo(1.2345678901234567).Within(3e-16));
+        Assert.That((BigDouble)(BigInteger.Pow(10, 400) - 1), Is.EqualTo(new BigDouble(1, 400)));
+    }
 }

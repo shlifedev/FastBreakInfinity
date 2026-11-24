@@ -560,9 +560,12 @@ namespace LD.Numeric.IdleNumber
             return new BigDouble(value);
         }
 
+        /// <summary>Converts an integer using the precision of the double mantissa and the full decimal exponent.</summary>
         public static explicit operator BigDouble(BigInteger value)
         {
-            return new BigDouble(value.ToString());
+            if (value >= int.MinValue && value <= int.MaxValue)
+                return new BigDouble((int)value);
+            return new BigDouble(value.ToString("E16", CultureInfo.InvariantCulture));
         }
 
         public static implicit operator BigDouble(int value)
