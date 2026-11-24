@@ -89,6 +89,18 @@ string saved = value.ToStringMantissaExponent();
 BigDouble loaded = new BigDouble(saved);
 ```
 
+## 콘솔 샘플
+
+.NET 10 SDK를 설치한 뒤 저장소 루트에서 방치형 게임을 실행합니다.
+
+```sh
+dotnet run --project src/dotnet/LD.Numeric/LD.GameSample
+```
+
+스페이스를 누르면 골드를 얻습니다. 숫자 1~4로 생산 시설을 구매하면 시간이 지날수록 골드가 쌓입니다. M으로 구매 수량(1개, 10개, 100개, 최대)을 전환하고 Q로 종료합니다. 파이프에서도 같은 키를 사용할 수 있고, 입력이 끝나면 게임이 종료됩니다.
+
+`dotnet run --project src/dotnet/LD.Numeric/Example`을 실행하면 한 줄씩 명령을 입력하는 방치형 게임과 `BigDouble` API 데모 중 하나를 선택할 수 있습니다.
+
 -----
 
 많은 최적화가 이루어졌습니다.
