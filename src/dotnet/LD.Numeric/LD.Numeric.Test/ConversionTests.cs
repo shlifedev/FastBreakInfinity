@@ -181,6 +181,8 @@ public class ConversionTests
     [TestCase(1.0000000000000007, 100L)]
     [TestCase(-1.0000000000000007, -100L)]
     [TestCase(8.0131844119230209, 200L)]
+    [TestCase(3.5018154242817077, 120L)]
+    [TestCase(-2.8771385761322237, -200L)]
     [TestCase(1.5, long.MinValue)]
     [TestCase(1.5, long.MaxValue)]
     [TestCase(double.NaN, 0L)]
