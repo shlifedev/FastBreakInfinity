@@ -7,6 +7,47 @@ namespace LD.Numeric.Test;
 /// </summary>
 public class MathFunctionTests
 {
+    [TestCase(1)]
+    [TestCase(-1)]
+    public void HyperbolicRange_TinyInputsKeepTheirMagnitude(int sign)
+    {
+        var value = new BigDouble(sign, -500);
+        Assert.That(BigDouble.Sinh(value), Is.EqualTo(value));
+        Assert.That(BigDouble.Tanh(value), Is.EqualTo(value));
+        double small = sign * 1e-100;
+        Assert.That(BigDouble.Asinh(small), Is.EqualTo(small));
+        Assert.That(BigDouble.Atanh(small), Is.EqualTo(small));
+    }
+
+    [TestCase(1)]
+    [TestCase(-1)]
+    public void HyperbolicRange_LargeFiniteInputs(int sign)
+    {
+        var value = new BigDouble(sign, 400);
+        Assert.That(BigDouble.Tanh(value), Is.EqualTo(new BigDouble(sign)));
+        Assert.That(
+            BigDouble.Asinh(value),
+            Is.EqualTo(sign * (400 * Math.Log(10) + Math.Log(2))).Within(1e-12)
+        );
+        Assert.That(
+            BigDouble.Acosh(BigDouble.Abs(value)),
+            Is.EqualTo(400 * Math.Log(10) + Math.Log(2)).Within(1e-12)
+        );
+        Assert.That(
+            BigDouble.Sinh(value),
+            Is.EqualTo(new BigDouble(sign * double.PositiveInfinity))
+        );
+        Assert.That(BigDouble.Cosh(value), Is.EqualTo(BigDouble.PositiveInfinity));
+    }
+
+    [Test]
+    public void HyperbolicRange_ModerateNegativeAsinhAvoidsCancellation()
+    {
+        Assert.That(BigDouble.Asinh(-1e10), Is.EqualTo(Math.Asinh(-1e10)).Within(1e-13));
+        Assert.That(BigDouble.Sinh(1000).Exponent, Is.EqualTo(433));
+        Assert.That(BigDouble.Cosh(1000).Mantissa, Is.EqualTo(9.850355570085235).Within(1e-11));
+    }
+
     // ===== Pow 테스트 =====
 
     [Test]
@@ -115,5 +156,18 @@ public class MathFunctionTests
         BigDouble result = BigDouble.Truncate(a);
 
         Assert.That(result == new BigDouble(-190), Is.True);
+    }
+
+    [Test]
+    public void HyperbolicRange_InverseFunctionsAtDomainEdges()
+    {
+        double above = Math.BitIncrement(1.0);
+        Assert.That(BigDouble.Acosh(new BigDouble(above)), Is.EqualTo(Math.Acosh(above)));
+        var below = new BigDouble(Math.BitDecrement(10.0), -1);
+        double gap = (10 - below.Mantissa) / 10;
+        double expected = Math.Log((2 - gap) / gap) / 2;
+        Assert.That(BigDouble.Atanh(below), Is.EqualTo(expected).Within(5e-15));
+        Assert.That(BigDouble.Atanh(-below), Is.EqualTo(-expected).Within(5e-15));
+        Assert.That(BigDouble.IsNaN(BigDouble.Cosh(BigDouble.NaN)), Is.True);
     }
 }
