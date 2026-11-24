@@ -65,30 +65,15 @@ namespace LD.Numeric.IdleNumber
                 return ToDouble();
             }
 
-            double roundedMantissa = Math.Round(mantissa, FractionalPartAccuracy);
-            long mod = ((Exponent % ExponentUnit) + ExponentUnit) % ExponentUnit;
-            if (mod == 0)
-            {
-                return roundedMantissa;
-            }
-
-            return mod == 1 ? roundedMantissa * 10 : roundedMantissa * 100;
+            return ScaleForAlphabetUnit(Math.Round(mantissa, FractionalPartAccuracy));
         }
 
-        /// <summary>
-        /// 표시용 (가수, 지수) 쌍. 반올림이 단위 경계(1000)에 도달하면 단위를 한 칸 올린다.
-        /// (예: 9.999999e23 → 가수 1000이 아니라 가수 1 + 지수 26)
-        /// </summary>
-        private (double mantissa, long exponent) AdjustedMantissaForDisplay()
+        private double ScaleForAlphabetUnit(double value)
         {
-            var adjusted = Math.Round(AdjustedMantissa(), 3);
-            var displayExponent = exponent;
-            if (adjusted >= 1000 || adjusted <= -1000)
-            {
-                adjusted /= 1000;
-                displayExponent += ExponentUnit;
-            }
-            return (adjusted, displayExponent);
+            long remainder = exponent % ExponentUnit;
+            if (remainder == 0)
+                return value;
+            return remainder == 1 ? value * 10 : value * 100;
         }
     }
 }

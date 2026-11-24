@@ -7,6 +7,44 @@ namespace LD.Numeric.Test;
 /// </summary>
 public class ToStringFormattingTests
 {
+    [TestCase(999.49, "999")]
+    [TestCase(999.5, "1.00A")]
+    [TestCase(-999.5, "-1.00A")]
+    [TestCase(999499.96, "999A")]
+    [TestCase(999500, "1.00B")]
+    [TestCase(-999500, "-1.00B")]
+    [TestCase(9996, "10.0A")]
+    [TestCase(99960, "100A")]
+    public void ToString_RoundingUsesFinalUnitAndDigitCount(double value, string expected)
+    {
+        Assert.That(new BigDouble(value).ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void ToString_CarryIntoLargestUnit_KeepsUnit()
+    {
+        var value = new BigDouble(9.999999, long.MaxValue - 2);
+        Assert.That(
+            value.ToString(),
+            Is.EqualTo("1.00" + BigDouble.GetAlphabetUnit(long.MaxValue))
+        );
+    }
+
+    [TestCase(double.PositiveInfinity, "Infinity")]
+    [TestCase(double.NegativeInfinity, "-Infinity")]
+    [TestCase(double.NaN, "NaN")]
+    public void ToString_NonFinite_UsesInvariantSymbol(double value, string expected)
+    {
+        Assert.That(new BigDouble(value).ToString(), Is.EqualTo(expected));
+    }
+
+    [TestCase(2.5, "2.5e-400")]
+    [TestCase(-2.5, "-2.5e-400")]
+    public void ToString_FractionBelowDoubleRange_PreservesValue(double mantissa, string expected)
+    {
+        Assert.That(new BigDouble(mantissa, -400).ToString(), Is.EqualTo(expected));
+    }
+
     [Test]
     public void ToString_Zero()
     {
