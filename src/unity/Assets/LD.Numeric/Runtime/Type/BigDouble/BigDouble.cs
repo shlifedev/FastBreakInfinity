@@ -1215,12 +1215,13 @@ namespace LD.Numeric.IdleNumber
 
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
-            var count = BigDouble.Round(
+            var estimate =
                 BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1)
-                    / BigDouble.Log10(priceRatio)
-            );
-            var cost = GeometricCost(count, actualStart, priceRatio);
-            return cost > resourcesAvailable ? count - 1 : count;
+                / BigDouble.Log10(priceRatio);
+            BigDouble count = PurchaseCandidate(estimate, out bool checkCost);
+            return checkCost && GeometricCost(count, actualStart, priceRatio) > resourcesAvailable
+                ? count - 1
+                : count;
         }
 
         /// <summary>
@@ -1237,7 +1238,7 @@ namespace LD.Numeric.IdleNumber
             // 비율 1은 고정가 — 등비 공식은 0/0이 됨
             if (priceRatio == BigDouble.One)
             {
-                return priceStart * numItems;
+                return PurchaseCostProduct(priceStart, numItems);
             }
 
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
@@ -1251,13 +1252,56 @@ namespace LD.Numeric.IdleNumber
             BigDouble priceRatio
         )
         {
-            return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
+            var factor = (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
+            return PurchaseCostProduct(actualStart, factor);
         }
 
         private static BigDouble AffordFixedPrice(BigDouble resourcesAvailable, BigDouble price)
         {
-            var count = BigDouble.Round(resourcesAvailable / price);
-            return count * price > resourcesAvailable ? count - 1 : count;
+            var estimate = resourcesAvailable / price;
+            if (estimate.Exponent >= 16)
+                return estimate;
+            BigDouble count = PurchaseCandidate(estimate.ToDouble(), out bool checkCost);
+            return checkCost && PurchaseCostProduct(count, price) > resourcesAvailable
+                ? count - 1
+                : count;
+        }
+
+        private static double PurchaseCandidate(double estimate, out bool checkCost)
+        {
+            var nearest = Math.Round(estimate);
+            // Only estimates close to a whole purchase need a cost comparison. The
+            // threshold selects a calculation; it is never added to the player's budget.
+            checkCost =
+                nearest > 0
+                && nearest < (1L << 52)
+                && Math.Abs(estimate - nearest) <= Math.Max(1e-10, Math.Abs(estimate) * 1e-14);
+            return checkCost ? nearest : Math.Floor(estimate);
+        }
+
+        private static BigDouble PurchaseCostProduct(BigDouble left, BigDouble right)
+        {
+            if (
+                left.Exponent >= 0
+                && right.Exponent >= 0
+                && left.Exponent <= 15
+                && right.Exponent <= 15
+            )
+            {
+                double a = left.ToDouble();
+                double b = right.ToDouble();
+                double product = a * b;
+                // An integer product up to 2^53 is exact in double. Normalize it once.
+                if (
+                    Math.Abs(product) <= (1L << 53)
+                    && a == Math.Truncate(a)
+                    && b == Math.Truncate(b)
+                    && new BigDouble(a) == left
+                    && new BigDouble(b) == right
+                )
+                    return new BigDouble(product);
+            }
+            return left * right;
         }
 
         /// <summary>
@@ -1281,8 +1325,10 @@ namespace LD.Numeric.IdleNumber
             // Use the conjugate when subtracting b would cancel the significant digits.
             var estimate =
                 b > BigDouble.Zero ? 2 * resourcesAvailable / (root + b) : (root - b) / priceAdd;
-            var count = BigDouble.Round(estimate);
-            return ArithmeticCost(count, actualStart, priceAdd) > resourcesAvailable
+            if (estimate.Exponent >= 16)
+                return estimate;
+            BigDouble count = PurchaseCandidate(estimate.ToDouble(), out bool checkCost);
+            return checkCost && ArithmeticCost(count, actualStart, priceAdd) > resourcesAvailable
                 ? count - 1
                 : count;
         }
@@ -1301,8 +1347,9 @@ namespace LD.Numeric.IdleNumber
             BigDouble currentOwned
         )
         {
+            if (priceAdd == BigDouble.Zero)
+                return PurchaseCostProduct(priceStart, numItems);
             var actualStart = priceStart + currentOwned * priceAdd;
-
             return ArithmeticCost(numItems, actualStart, priceAdd);
         }
 

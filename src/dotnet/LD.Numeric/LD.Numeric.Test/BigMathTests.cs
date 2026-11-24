@@ -243,4 +243,14 @@ public class BigMathTests
             Is.EqualTo(new BigDouble(4))
         );
     }
+
+    [Test]
+    public void PurchaseCount_ExactlyRepresentableGeometricPrice()
+    {
+        BigDouble budget = 317440;
+        var below = new BigDouble(Math.BitDecrement(317440.0));
+        Assert.That(BigMath.AffordGeometricSeries(budget, 10, 2, 10), Is.EqualTo(new BigDouble(5)));
+        Assert.That(BigMath.AffordGeometricSeries(below, 10, 2, 10), Is.EqualTo(new BigDouble(4)));
+        Assert.That(BigMath.SumGeometricSeries(5, 10, 2, 10), Is.EqualTo(budget));
+    }
 }
