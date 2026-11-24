@@ -22,6 +22,14 @@
 
 </details>
 
+## Unity에 설치하기
+
+Unity 2021.2 이상에서 .NET Standard 2.1 API 프로필을 사용합니다. 패키지 관리자에서 **Add package from git URL**을 선택하고 다음 패키지 주소를 입력하세요.
+
+```text
+https://github.com/shlifedev/FastBreakInfinity.git?path=/src/unity/Assets/LD.Numeric
+```
+
 ## 왜 빠른가요?
 
 아래 사진에 보이는 함수들은 한 프레임에 1000번씩 호출되었습니다.
