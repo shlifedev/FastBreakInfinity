@@ -36,19 +36,7 @@ namespace LD.Numeric.IdleNumber
 
         public BigDouble(string value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (ContainsExponentMarker(value))
-            {
-                this = new BigDouble(value, eFormat.NumberWithExponent);
-            }
-            else
-            {
-                this = BigDouble.Parse(value);
-            }
+            this = Parse(value);
         }
     }
 }

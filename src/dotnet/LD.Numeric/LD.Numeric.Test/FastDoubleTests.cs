@@ -60,6 +60,36 @@ public class FastDoubleTests
         Assert.That(FastDouble.ParseDouble("2e-3"), Is.EqualTo(0.002).Within(1e-18));
     }
 
+    [TestCase("1e-309")]
+    [TestCase("-5e-324")]
+    [TestCase("2.2250738585072014e-308")]
+    [TestCase("1.7976931348623157e308")]
+    [TestCase("-0e400")]
+    [TestCase("-1e-400")]
+    [TestCase("1.0000000000000007e0")]
+    public void ParseDouble_ExponentNotation_PreservesDoubleValue(string input)
+    {
+        double expected = double.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
+        double actual = FastDouble.ParseDouble(input.AsSpan(), 0);
+        Assert.That(
+            BitConverter.DoubleToInt64Bits(actual),
+            Is.EqualTo(BitConverter.DoubleToInt64Bits(expected))
+        );
+    }
+
+    [Test]
+    public void ParseDouble_LongPlainDecimal_AppliesRequestedTruncation()
+    {
+        Assert.That(
+            FastDouble.ParseDouble("1.000000000000000799", 16),
+            Is.EqualTo(1.0000000000000007)
+        );
+        Assert.That(
+            FastDouble.ParseDouble("1." + new string('0', 310), int.MaxValue),
+            Is.EqualTo(1)
+        );
+    }
+
     [TestCase("12a34")]
     [TestCase("1.2.3")]
     [TestCase("5e3e2")]

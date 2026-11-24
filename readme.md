@@ -36,9 +36,9 @@ Unless you need to create new strings like with ToString, the code is **memory e
 
 ## Important Notice
 
-Since `FastDouble.cs` only handles precision up to 6 decimal places, make sure to truncate any values beyond 6 decimal places when sending data to the server or performing similar operations.
+`BigDouble.Parse("1.123456789")` and `new BigDouble("1.123456789")` truncate a plain decimal to `1.123456`. `FastDouble.ParseDouble` uses the same six-place default for plain decimals and accepts a different limit through `maxDecimalPlaces`.
 
-ex ) 1.123456789e10 => 1.123456e10
+With an `e` or `E` exponent, both parsers read the full mantissa to `double` precision. For example, `new BigDouble("1.123456789e100")` retains the mantissa `1.123456789` and the exponent `100`. For saves and network messages, write the result of `ToStringMantissaExponent()` directly and load it with `BigDouble.Parse` or the string constructor. This preserves the stored mantissa and its signed 64-bit exponent.
 
 --------
 

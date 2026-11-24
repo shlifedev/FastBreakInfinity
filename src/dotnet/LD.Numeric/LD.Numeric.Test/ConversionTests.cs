@@ -178,6 +178,34 @@ public class ConversionTests
         Assert.That(BigDouble.Zero.ToStringMantissaExponent(), Is.EqualTo("0e0"));
     }
 
+    [TestCase(1.0000000000000007, 100L)]
+    [TestCase(-1.0000000000000007, -100L)]
+    [TestCase(8.0131844119230209, 200L)]
+    [TestCase(1.5, long.MinValue)]
+    [TestCase(1.5, long.MaxValue)]
+    [TestCase(double.NaN, 0L)]
+    [TestCase(double.PositiveInfinity, 0L)]
+    [TestCase(double.NegativeInfinity, 0L)]
+    public void ToStringMantissaExponent_RoundTripsThroughPublicReaders(
+        double mantissa,
+        long exponent
+    )
+    {
+        var original = new BigDouble(mantissa, exponent);
+        var saved = original.ToStringMantissaExponent();
+        var readers = new[]
+        {
+            BigDouble.Parse(saved),
+            new BigDouble(saved),
+            new BigDouble(saved, BigDouble.eFormat.NumberWithExponent),
+        };
+        foreach (var loaded in readers)
+        {
+            Assert.That(loaded.Mantissa, Is.EqualTo(original.Mantissa));
+            Assert.That(loaded.Exponent, Is.EqualTo(original.Exponent));
+        }
+    }
+
     // ===== Equals(object) / GetHashCode / CompareTo(object) 계약 =====
 
     [Test]

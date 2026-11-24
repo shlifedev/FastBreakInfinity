@@ -191,24 +191,14 @@ namespace LD.Numeric.IdleNumber
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (ContainsExponentMarker(value))
+            int exponentMarker = value.AsSpan().IndexOfAny('e', 'E');
+            if (exponentMarker >= 0)
             {
-                var info = BigValueInfo.ExponentFormatToBigValueInfo(value);
+                var info = BigValueInfo.Parse(value, exponentMarker);
                 return Normalize(info.Mantissa, info.Exponent);
             }
 
-            if (value == "NaN")
-            {
-                return NaN;
-            }
-
-            var result = new BigDouble(FastDouble.ParseDouble(value, FractionalPartAccuracy));
-            if (IsNaN(result))
-            {
-                throw new Exception("Invalid argument: " + value);
-            }
-
-            return result;
+            return new BigDouble(FastDouble.ParseDouble(value, FractionalPartAccuracy));
         }
 
         public float ToFloat()
@@ -283,7 +273,13 @@ namespace LD.Numeric.IdleNumber
 
         public string ToStringMantissaExponent()
         {
-            return mantissa.ToString(CultureInfo.InvariantCulture)
+#if NETCOREAPP3_0_OR_GREATER
+            const string format = "R";
+#else
+            // Unity Mono의 R 포맷은 일부 가수를 복원하는 데 필요한 17자리를 생략한다.
+            const string format = "G17";
+#endif
+            return mantissa.ToString(format, CultureInfo.InvariantCulture)
                 + "e"
                 + exponent.ToString(CultureInfo.InvariantCulture);
         }
@@ -1106,20 +1102,6 @@ namespace LD.Numeric.IdleNumber
         private static bool IsFinite(double value)
         {
             return !double.IsNaN(value) && !double.IsInfinity(value);
-        }
-
-        private static bool ContainsExponentMarker(string value)
-        {
-            for (int i = 0; i < value.Length; i++)
-            {
-                var c = value[i];
-                if (c == 'e' || c == 'E')
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>

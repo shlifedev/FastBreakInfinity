@@ -32,18 +32,9 @@ namespace LD.Numeric.IdleNumber
             1e22,
         };
 
-        internal static double Pow10(int exp)
-        {
-            if (exp >= 0 && exp < PositivePowersOf10.Length)
-                return PositivePowersOf10[exp];
-            if (exp < 0 && -exp < PositivePowersOf10.Length)
-                return 1.0 / PositivePowersOf10[-exp];
-            return Math.Pow(10.0, exp);
-        }
-
         /// <summary>
-        /// 스트링을 더블로 변환함. null/빈 문자열은 0을 반환하고,
-        /// 그 외에 숫자가 하나도 없는 입력("-", ".", "1e" 등)은 FormatException을 던진다.
+        /// 스트링을 더블로 변환함. null/빈 문자열은 0을 반환한다.
+        /// NaN, Infinity, -Infinity 및 invariant 숫자 표기를 허용한다.
         /// </summary>
         /// <param name="s">스트링 (invariant 표기만 허용, 공백·천 단위 구분자 불가)</param>
         /// <param name="maxDecimalPlaces">
@@ -80,13 +71,13 @@ namespace LD.Numeric.IdleNumber
             int startIndex = isNegative || s[0] == '+' ? 1 : 0;
 
             double mantissa = 0.0;
-            int exponent = 0;
+            long exponent = 0;
             bool negativeExponent = false;
             bool hasExponent = false;
-            bool hasDecimal = false;
             bool hasMantissaDigits = false;
             bool hasExponentDigits = false;
             int decimalPlaces = 0;
+            int decimalPoint = -1;
 
             for (int i = startIndex; i < s.Length; i++)
             {
@@ -96,25 +87,25 @@ namespace LD.Numeric.IdleNumber
                     if (hasExponent)
                     {
                         hasExponentDigits = true;
-                        // int 오버플로 랩어라운드 방지 — 이 크기면 결과는 어차피 0 또는 Infinity
-                        if (exponent < 100_000_000)
+                        // 소수 자릿수로 상쇄할 수 있는 지수 범위까지만 누적한다.
+                        if (exponent <= int.MaxValue)
                             exponent = exponent * 10 + (c - '0');
                     }
                     else
                     {
                         hasMantissaDigits = true;
-                        if (!hasDecimal || decimalPlaces < maxDecimalPlaces)
+                        if (decimalPoint < 0 || decimalPlaces < maxDecimalPlaces)
                         {
                             mantissa = mantissa * 10.0 + (c - '0');
-                            if (hasDecimal)
+                            if (decimalPoint >= 0)
                                 decimalPlaces++;
                         }
                         // maxDecimalPlaces 초과 소수 자릿수는 절삭
                     }
                 }
-                else if (c == '.' && !hasDecimal && !hasExponent)
+                else if (c == '.' && decimalPoint < 0 && !hasExponent)
                 {
-                    hasDecimal = true;
+                    decimalPoint = i;
                 }
                 else if ((c == 'e' || c == 'E') && !hasExponent)
                 {
@@ -128,6 +119,12 @@ namespace LD.Numeric.IdleNumber
                 }
                 else
                 {
+                    if (s.SequenceEqual("NaN".AsSpan()))
+                        return double.NaN;
+                    if (s.SequenceEqual("Infinity".AsSpan()))
+                        return double.PositiveInfinity;
+                    if (s.SequenceEqual("-Infinity".AsSpan()))
+                        return double.NegativeInfinity;
                     throw new FormatException("입력값이 잘못 됨 => " + s.ToString());
                 }
             }
@@ -139,15 +136,34 @@ namespace LD.Numeric.IdleNumber
             }
 
             // 소수부 보정과 지수를 합쳐 곱셈/나눗셈 한 번으로 처리 — 이중 반올림 방지
-            int netExponent =
-                (hasExponent ? (negativeExponent ? -exponent : exponent) : 0) - decimalPlaces;
+            if (mantissa == 0)
+                return isNegative ? -0.0 : 0.0;
+            long netExponent = (negativeExponent ? -exponent : exponent) - decimalPlaces;
+            // 2^53 아래의 정수 가수와 10^0~10^22는 double로 정확히 표현된다.
+            // 이 범위 밖에서는 중간 반올림과 스케일 오버플로를 피하도록 런타임 파서를 사용한다.
+            if (mantissa >= (1L << 53) || Math.Abs(netExponent) >= PositivePowersOf10.Length)
+            {
+                if (!hasExponent && decimalPoint >= 0)
+                    s = s.Slice(0, decimalPoint + 1 + decimalPlaces);
+                if (
+                    double.TryParse(
+                        s,
+                        NumberStyles.Float,
+                        CultureInfo.InvariantCulture,
+                        out double parsed
+                    )
+                )
+                    return parsed == 0 && isNegative ? -0.0 : parsed;
+                // 오버플로 시 Infinity 대신 false를 반환하는 런타임과 호환
+                return isNegative ? double.NegativeInfinity : double.PositiveInfinity;
+            }
             if (netExponent > 0)
             {
-                mantissa *= Pow10(netExponent);
+                mantissa *= PositivePowersOf10[netExponent];
             }
             else if (netExponent < 0)
             {
-                mantissa /= Pow10(-netExponent);
+                mantissa /= PositivePowersOf10[-netExponent];
             }
             return isNegative ? -mantissa : mantissa;
         }
@@ -186,7 +202,7 @@ namespace LD.Numeric.IdleNumber
             }
 
             long integerPart = (long)value;
-            double scale = Pow10(decimalPlaces);
+            double scale = PositivePowersOf10[decimalPlaces];
             long fraction = (long)
                 Math.Round((value - integerPart) * scale, MidpointRounding.AwayFromZero);
             // 소수부 반올림이 자리올림되면 정수부로 캐리 (예: 1.999 → 2.00)
