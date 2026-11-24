@@ -58,6 +58,14 @@ public class BigValueInfoTests
         Assert.That(info.Exponent, Is.EqualTo(999999999L));
     }
 
+    [Test]
+    public void Parse_FractionWithMoreThan22DecimalPlaces_PreservesMantissa()
+    {
+        var info = BigValueInfo.ExponentFormatToBigValueInfo("0.00000000000000000000001e8");
+        Assert.That(info.Mantissa, Is.EqualTo(1e-23));
+        Assert.That(info.Exponent, Is.EqualTo(8));
+    }
+
     [TestCase("")]
     [TestCase(null)]
     [TestCase("e5")] // 가수 없음
@@ -68,6 +76,8 @@ public class BigValueInfoTests
     [TestCase("1-2e5")] // 부호가 가운데
     [TestCase("12x")] // 숫자가 아닌 문자
     [TestCase("1e92233720368547758079")] // long 오버플로
+    [TestCase("1e9223372036854775808")]
+    [TestCase("1e-9223372036854775809")]
     public void Parse_InvalidInput_ThrowsFormatException(string? input)
     {
         Assert.Throws<FormatException>(() => BigValueInfo.ExponentFormatToBigValueInfo(input!));

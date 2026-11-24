@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace LD.Numeric.IdleNumber
 {
@@ -14,106 +15,38 @@ namespace LD.Numeric.IdleNumber
                 throw new FormatException("빈 문자열은 파싱할 수 없습니다.");
             }
 
-            double mantissa = 0;
+            return Parse(input, input.AsSpan().IndexOfAny('e', 'E'));
+        }
+
+        internal static BigValueInfo Parse(string input, int exponentMarker)
+        {
+            var mantissaText = input.AsSpan();
             long exponent = 0;
-            int decimalDigits = 0;
-            bool isExponent = false;
-            bool isExponentNegative = false;
-            bool isMantissaNegative = false;
-            bool isDecimal = false;
-            bool hasMantissaDigit = false;
-            bool hasExponentDigit = false;
-
-            for (var index = 0; index < input.Length; index++)
+            if (exponentMarker >= 0)
             {
-                var c = input[index];
-                if (c == 'e' || c == 'E')
+                mantissaText = mantissaText.Slice(0, exponentMarker);
+                var exponentText = input.AsSpan(exponentMarker + 1);
+                // TryParse는 숫자 뒤의 NUL도 허용하므로 마지막 문자가 숫자인지 확인한다.
+                if (
+                    mantissaText.IsEmpty
+                    || (uint)(input[input.Length - 1] - '0') > 9
+                    || !long.TryParse(
+                        exponentText,
+                        NumberStyles.AllowLeadingSign,
+                        CultureInfo.InvariantCulture,
+                        out exponent
+                    )
+                )
                 {
-                    if (isExponent)
-                    {
-                        throw new FormatException("잘못된 입력: " + input);
-                    }
-                    isExponent = true;
-                    continue;
-                }
-
-                if (c == '+' || c == '-')
-                {
-                    // 부호는 가수 맨 앞 또는 지수(e 바로 뒤)에서만 허용
-                    bool validPosition =
-                        index == 0 || input[index - 1] == 'e' || input[index - 1] == 'E';
-                    if (!validPosition)
-                    {
-                        throw new FormatException("잘못된 입력: " + input);
-                    }
-
-                    if (c == '-')
-                    {
-                        if (isExponent)
-                            isExponentNegative = true;
-                        else
-                            isMantissaNegative = true;
-                    }
-                    continue;
-                }
-
-                if (c == '.')
-                {
-                    if (isDecimal || isExponent)
-                    {
-                        throw new FormatException("잘못된 입력: " + input);
-                    }
-                    isDecimal = true;
-                    continue;
-                }
-
-                if (c < '0' || c > '9')
-                {
-                    throw new FormatException("잘못된 입력: " + input);
-                }
-
-                int digit = c - '0';
-                if (isExponent)
-                {
-                    hasExponentDigit = true;
-                    if (exponent > (long.MaxValue - digit) / 10)
-                    {
-                        throw new FormatException("지수가 표현 범위를 벗어남: " + input);
-                    }
-                    exponent = exponent * 10 + digit;
-                }
-                else
-                {
-                    hasMantissaDigit = true;
-                    mantissa = mantissa * 10 + digit;
-                    if (isDecimal)
-                    {
-                        decimalDigits++;
-                    }
+                    throw new FormatException("잘못된 지수 표기: " + input);
                 }
             }
 
-            if (!hasMantissaDigit || (isExponent && !hasExponentDigit))
+            return new BigValueInfo
             {
-                throw new FormatException("잘못된 입력: " + input);
-            }
-
-            if (isMantissaNegative)
-            {
-                mantissa = -mantissa;
-            }
-
-            if (decimalDigits > 0)
-            {
-                mantissa /= FastDouble.Pow10(decimalDigits);
-            }
-
-            if (isExponentNegative)
-            {
-                exponent = -exponent;
-            }
-
-            return new BigValueInfo() { Exponent = exponent, Mantissa = mantissa };
+                Mantissa = FastDouble.ParseDouble(mantissaText, int.MaxValue),
+                Exponent = exponent,
+            };
         }
     }
 }
