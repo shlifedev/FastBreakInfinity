@@ -24,7 +24,6 @@ namespace LD.Numeric.IdleNumber
                     break;
                 case eFormat.NumberWithExponent:
                     var split = BigValueInfo.ExponentFormatToBigValueInfo(value);
-                    // mantissa를 1~10 범위로 정규화
                     this = Normalize(split.Mantissa, split.Exponent);
                     break;
                 default:

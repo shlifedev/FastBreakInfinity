@@ -4,9 +4,6 @@ using System;
 using System.Globalization;
 using Random = System.Random;
 
-// I'm not sure if there's a "Yes, this is Unity" define symbol
-// (#if UNITY doesn't seem to work). If you happen to know one - please create
-// an issue here https://github.com/Razenpok/BreakInfinity.cs/issues.
 #if UNITY_2017_1_OR_NEWER
 using UnityEngine;
 #endif
@@ -20,15 +17,12 @@ namespace BreakInfinity
     {
         public const double Tolerance = 1e-18;
 
-        //for example: if two exponents are more than 17 apart, consider adding them together pointless, just return the larger one
         private const int MaxSignificantDigits = 17;
 
         private const long ExpLimit = long.MaxValue;
 
-        //the largest exponent that can appear in a Double, though not all mantissas are valid here.
         private const long DoubleExpMax = 308;
 
-        //The smallest exponent that can appear in a Double, though not all mantissas are valid here.
         private const long DoubleExpMin = -324;
 
 #if UNITY_2017_1_OR_NEWER
@@ -41,8 +35,6 @@ namespace BreakInfinity
         private long exponent;
 #endif
 
-        // This constructor is used to prevent non-normalized values to be created via constructor.
-        // ReSharper disable once UnusedParameter.Local
         private BigDouble(double mantissa, long exponent, PrivateConstructorArg _)
         {
             this.mantissa = mantissa;
@@ -62,7 +54,6 @@ namespace BreakInfinity
 
         public BigDouble(double value)
         {
-            //SAFETY: Handle Infinity and NaN in a somewhat meaningful way.
             if (double.IsNaN(value))
             {
                 this = NaN;
@@ -97,7 +88,6 @@ namespace BreakInfinity
             }
 
             var tempExponent = (long)Math.Floor(Math.Log10(Math.Abs(mantissa)));
-            //SAFETY: handle 5e-324, -5e-324 separately
             if (tempExponent == DoubleExpMin)
             {
                 mantissa = mantissa * 10 / 1e-323;
@@ -190,7 +180,6 @@ namespace BreakInfinity
                 return 0.0;
             }
 
-            //SAFETY: again, handle 5e-324, -5e-324 separately
             if (Exponent == DoubleExpMin)
             {
                 return Mantissa > 0 ? 5e-324 : -5e-324;
@@ -339,10 +328,6 @@ namespace BreakInfinity
 
         public static BigDouble Add(BigDouble left, BigDouble right)
         {
-            //figure out which is bigger, shrink the mantissa of the smaller by the difference in exponents, add mantissas, normalize and return
-
-            //TODO: Optimizations and simplification may be possible, see https://github.com/Patashu/break_infinity.js/issues/8
-
             if (IsZero(left.Mantissa))
             {
                 return right;
@@ -355,7 +340,6 @@ namespace BreakInfinity
 
             if (IsNaN(left) || IsNaN(right) || IsInfinity(left) || IsInfinity(right))
             {
-                // Let Double handle these cases.
                 return left.Mantissa + right.Mantissa;
             }
 
@@ -376,8 +360,6 @@ namespace BreakInfinity
                 return bigger;
             }
 
-            //have to do this because adding numbers that were once integers but scaled down is imprecise.
-            //Example: 299 + 18
             return Normalize(
                 Math.Round(1e14 * bigger.Mantissa + 1e14 * smaller.Mantissa *
                            PowersOf10.Lookup(smaller.Exponent - bigger.Exponent)),
@@ -391,7 +373,6 @@ namespace BreakInfinity
 
         public static BigDouble Multiply(BigDouble left, BigDouble right)
         {
-            // 2e3 * 4e5 = (2 * 4)e(3 + 5)
             return Normalize(left.Mantissa * right.Mantissa, left.Exponent + right.Exponent);
         }
 
@@ -480,7 +461,6 @@ namespace BreakInfinity
                 || IsNaN(this) || IsNaN(other)
                 || IsInfinity(this) || IsInfinity(other))
             {
-                // Let Double handle these cases.
                 return Mantissa.CompareTo(other.Mantissa);
             }
             if (Mantissa > 0 && other.Mantissa < 0)
@@ -517,13 +497,6 @@ namespace BreakInfinity
                 || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa));
         }
 
-        /// <summary>
-        /// Relative comparison with tolerance being adjusted with greatest exponent.
-        /// <para>
-        /// For example, if you put in 1e-9, then any number closer to the larger number
-        /// than (larger number) * 1e-9 will be considered equal.
-        /// </para>
-        /// </summary>
         public bool Equals(BigDouble other, double tolerance)
         {
             return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
@@ -632,7 +605,6 @@ namespace BreakInfinity
                 return double.NaN;
             }
 
-            //UN-SAFETY: Most incremental game cases are log(number := 1 or greater, base := 2 or greater). We assume this to be true and thus only need to return a number, not a BigDouble, and don't do any other kind of error checking.
             return 2.30258509299404568402 / Math.Log(@base) * Log10(value);
         }
 
@@ -673,8 +645,6 @@ namespace BreakInfinity
             var mantissa = Math.Pow(value.Mantissa, power);
             if (double.IsInfinity(mantissa))
             {
-                // TODO: This is rather dumb, but works anyway
-                // Power is too big for our mantissa, so we do multiple Pow with smaller powers.
                 return Pow(Pow(value, 2), (double) power / 2);
             }
 
@@ -683,7 +653,6 @@ namespace BreakInfinity
 
         public static BigDouble Pow(BigDouble value, double power)
         {
-            // TODO: power can be greater that long.MaxValue, which can bring troubles in fast track
             var powerIsInteger = IsInteger(power);
             if (value < 0 && !powerIsInteger)
             {
@@ -699,11 +668,6 @@ namespace BreakInfinity
 
         private static BigDouble PowInternal(BigDouble value, double other)
         {
-            //UN-SAFETY: Accuracy not guaranteed beyond ~9~11 decimal places.
-
-            //TODO: Fast track seems about neutral for performance. It might become faster if an integer pow is implemented, or it might not be worth doing (see https://github.com/Patashu/break_infinity.js/issues/4 )
-
-            //Fast track: If (this.exponent*value) is an integer and mantissa^value fits in a Number, we can do a very fast method.
             var temp = value.Exponent * other;
             double newMantissa;
             if (IsInteger(temp) && IsFinite(temp) && Math.Abs(temp) < ExpLimit)
@@ -715,8 +679,6 @@ namespace BreakInfinity
                 }
             }
 
-            //Same speed and usually more accurate. (An arbitrary-precision version of this calculation is used in break_break_infinity.js, sacrificing performance for utter accuracy.)
-
             var newexponent = Math.Truncate(temp);
             var residue = temp - newexponent;
             newMantissa = Math.Pow(10, other * Math.Log10(value.Mantissa) + residue);
@@ -725,8 +687,7 @@ namespace BreakInfinity
                 return Normalize(newMantissa, (long) newexponent);
             }
 
-            //UN-SAFETY: This should return NaN when mantissa is negative and value is noninteger.
-            var result = Pow10(other * AbsLog10(value)); //this is 2x faster and gives same values AFAIK
+            var result = Pow10(other * AbsLog10(value));
             if (Sign(value) == -1 && AreEqual(other % 2, 1))
             {
                 return -result;
@@ -737,8 +698,6 @@ namespace BreakInfinity
 
         public static BigDouble Factorial(BigDouble value)
         {
-            //Using Stirling's Approximation. https://en.wikipedia.org/wiki/Stirling%27s_approximation#Versions_suitable_for_calculators
-
             var n = value.ToDouble() + 1;
 
             return Pow(n / 2.71828182845904523536 * Math.Sqrt(n * Math.Sinh(1 / n) + 1 / (810 * Math.Pow(n, 6))), n) * Math.Sqrt(2 * 3.141592653589793238462 / n);
@@ -758,7 +717,6 @@ namespace BreakInfinity
 
             if (value.Exponent % 2 != 0)
             {
-                // mod of a negative number is negative, so != means '1 or -1'
                 return Normalize(Math.Sqrt(value.Mantissa) * 3.16227766016838, (long) Math.Floor(value.Exponent / 2.0));
             }
 
@@ -786,7 +744,7 @@ namespace BreakInfinity
             if (mod != 0)
             {
                 return Normalize(newmantissa * 4.6415888336127789, (long) Math.Floor(value.Exponent / 3.0));
-            } //mod != 0 at this point means 'mod == 2 || mod == -2'
+            }
 
             return Normalize(newmantissa, (long) Math.Floor(value.Exponent / 3.0));
         }
@@ -842,9 +800,6 @@ namespace BreakInfinity
             return !double.IsNaN(value) && !double.IsInfinity(value);
         }
 
-        /// <summary>
-        /// The BigNumber class implements methods for formatting and parsing big numeric values.
-        /// </summary>
         private static class BigNumber
         {
             public static string FormatBigDouble(BigDouble value, string format, IFormatProvider formatProvider)
@@ -963,13 +918,8 @@ namespace BreakInfinity
                     return "0" + (places > 0 ? ".".PadRight(places + 1, '0') : "");
                 }
 
-                // two cases:
-                // 1) exponent is 17 or greater: just print out mantissa with the appropriate number of zeroes after it
-                // 2) exponent is 16 or less: use basic toFixed
-
                 if (value.Exponent >= MaxSignificantDigits)
                 {
-                    // TODO: StringBuilder-optimizable
                     return value.Mantissa
                         .ToString(CultureInfo.InvariantCulture)
                         .Replace(".", "")
@@ -980,11 +930,6 @@ namespace BreakInfinity
             }
         }
 
-        /// <summary>
-        /// We need this lookup table because Math.pow(10, exponent) when exponent's absolute value
-        /// is large is slightly inaccurate. you can fix it with the power of math... or just make
-        /// a lookup table. Faster AND simpler.
-        /// </summary>
         private static class PowersOf10
         {
             private static double[] Powers { get; } = new double[DoubleExpMax - DoubleExpMin];
@@ -1013,11 +958,6 @@ namespace BreakInfinity
     {
         private static readonly Random Random = new Random();
 
-        /// <summary>
-        /// This doesn't follow any kind of sane random distribution, so use this for testing purposes only.
-        /// <para>5% of the time, mantissa is 0.</para>
-        /// <para>10% of the time, mantissa is round.</para>
-        /// </summary>
         public static BigDouble RandomBigDouble(double absMaxExponent)
         {
             if (Random.NextDouble() * 20 < 1)
@@ -1036,28 +976,14 @@ namespace BreakInfinity
             return BigDouble.Normalize(mantissa, exponent);
         }
 
-        /// <summary>
-        /// If you're willing to spend 'resourcesAvailable' and want to buy something with
-        /// exponentially increasing cost each purchase (start at priceStart, multiply by priceRatio,
-        /// already own currentOwned), how much of it can you buy?
-        /// <para>
-        /// Adapted from Trimps source code.
-        /// </para>
-        /// </summary>
         public static BigDouble AffordGeometricSeries(BigDouble resourcesAvailable, BigDouble priceStart,
             BigDouble priceRatio, BigDouble currentOwned)
         {
             var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
 
-            //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
-
             return BigDouble.Floor(BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1) / BigDouble.Log10(priceRatio));
         }
 
-        /// <summary>
-        /// How much resource would it cost to buy (numItems) items if you already have currentOwned,
-        /// the initial price is priceStart and it multiplies by priceRatio each purchase?
-        /// </summary>
         public static BigDouble SumGeometricSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceRatio,
             BigDouble currentOwned)
         {
@@ -1066,19 +992,10 @@ namespace BreakInfinity
             return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
         }
 
-        /// <summary>
-        /// If you're willing to spend 'resourcesAvailable' and want to buy something with
-        /// additively increasing cost each purchase (start at priceStart, add by priceAdd,
-        /// already own currentOwned), how much of it can you buy?
-        /// </summary>
         public static BigDouble AffordArithmeticSeries(BigDouble resourcesAvailable, BigDouble priceStart,
             BigDouble priceAdd, BigDouble currentOwned)
         {
             var actualStart = priceStart + currentOwned * priceAdd;
-
-            //n = (-(a-d/2) + sqrt((a-d/2)^2+2dS))/d
-            //where a is actualStart, d is priceAdd and S is resourcesAvailable
-            //then floor it and you're done!
 
             var b = actualStart - priceAdd / 2;
             var b2 = BigDouble.Pow(b, 2);
@@ -1088,30 +1005,14 @@ namespace BreakInfinity
             );
         }
 
-        /// <summary>
-        /// How much resource would it cost to buy (numItems) items if you already have currentOwned,
-        /// the initial price is priceStart and it adds priceAdd each purchase?
-        /// <para>
-        /// Adapted from http://www.mathwords.com/a/arithmetic_series.htm
-        /// </para>
-        /// </summary>
         public static BigDouble SumArithmeticSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceAdd,
             BigDouble currentOwned)
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
-            //(n/2)*(2*a+(n-1)*d)
-
             return numItems / 2 * (2 * actualStart + (numItems - 1) * priceAdd);
         }
 
-        /// <summary>
-        /// When comparing two purchases that cost (resource) and increase your resource/sec by (delta_RpS),
-        /// the lowest efficiency score is the better one to purchase.
-        /// <para>
-        /// From Frozen Cookies: http://cookieclicker.wikia.com/wiki/Frozen_Cookies_(JavaScript_Add-on)#Efficiency.3F_What.27s_that.3F
-        /// </para>
-        /// </summary>
         public static BigDouble EfficiencyOfPurchase(BigDouble cost, BigDouble currentRpS, BigDouble deltaRpS)
         {
             return cost / currentRpS + cost / deltaRpS;
@@ -1291,17 +1192,11 @@ namespace BreakInfinity
         }
 
 #if EXTENSIONS_EASTER_EGGS
-        /// <summary>
-        /// Joke function from Realm Grinder.
-        /// </summary>
         public static BigDouble AscensionPenalty(this BigDouble value, double ascensions)
         {
             return Math.Abs(ascensions) < double.Epsilon ? value : BigDouble.Pow(value, Math.Pow(10, -ascensions));
         }
 
-        /// <summary>
-        /// Joke function from Cookie Clicker. It's an 'egg'.
-        /// </summary>
         public static BigDouble Egg(this BigDouble value)
         {
             return value + 9;

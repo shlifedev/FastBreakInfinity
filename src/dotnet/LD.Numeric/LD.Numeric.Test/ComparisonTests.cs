@@ -2,15 +2,11 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble 비교 연산자 테스트
-/// </summary>
 public class ComparisonTests
 {
     [Test]
     public void Comparison_SameExponent_DifferentMantissa()
     {
-        // 같은 지수, 다른 가수 비교
         BigDouble a = new BigDouble(1.1, 100);
         BigDouble b = new BigDouble(1.2, 100);
 
@@ -22,7 +18,6 @@ public class ComparisonTests
     [Test]
     public void Comparison_SmallMantissaDifference()
     {
-        // 소수점 아래 미세한 차이 비교
         BigDouble a = new BigDouble(1.000000001, 100);
         BigDouble b = new BigDouble(1.000000002, 100);
 
@@ -33,11 +28,9 @@ public class ComparisonTests
     [Test]
     public void Comparison_VerySmallMantissaDifference()
     {
-        // 더 미세한 차이 (Tolerance = 1e-18 근처)
         BigDouble a = new BigDouble(1.0, 100);
         BigDouble b = new BigDouble(1.0 + 1e-15, 100);
 
-        // double 정밀도 한계 내에서 다르다면 다르게 인식해야 함
         if (Math.Abs(b.Mantissa - a.Mantissa) > double.Epsilon)
         {
             Assert.That(a != b, Is.True, "감지 가능한 차이는 다르게 처리해야 함");
@@ -47,7 +40,6 @@ public class ComparisonTests
     [Test]
     public void Comparison_DifferentExponent()
     {
-        // 다른 지수 비교 - 지수가 크면 무조건 큼
         BigDouble small = new BigDouble(9.9, 99);
         BigDouble large = new BigDouble(1.1, 100);
 
@@ -58,7 +50,6 @@ public class ComparisonTests
     [Test]
     public void Comparison_AdjacentExponent()
     {
-        // 인접 지수 비교 (경계값)
         BigDouble a = new BigDouble(9.999999999999999, 99);
         BigDouble b = new BigDouble(1.0, 100);
 
@@ -68,7 +59,6 @@ public class ComparisonTests
     [Test]
     public void Comparison_NegativeNumbers()
     {
-        // 음수 비교
         BigDouble a = new BigDouble(-1.1, 100);
         BigDouble b = new BigDouble(-1.2, 100);
 

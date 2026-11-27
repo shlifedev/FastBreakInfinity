@@ -2,9 +2,6 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble Equals 메서드 테스트
-/// </summary>
 public class EqualsTests
 {
     [Test]

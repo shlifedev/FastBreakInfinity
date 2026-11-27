@@ -4,19 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
-```bash
-# 전체 솔루션 빌드
-dotnet build LD.Numeric.sln
-
-# Release 빌드
-dotnet build LD.Numeric.sln -c Release
-
-# 테스트 실행
-dotnet test LD.Numeric.Test/LD.Numeric.Test.csproj
-
-# 특정 테스트만 실행
-dotnet test --filter "FullyQualifiedName~TestMethodName"
-```
+| 작업 | 명령 |
+| --- | --- |
+| 전체 솔루션 빌드 | `dotnet build LD.Numeric.sln` |
+| Release 빌드 | `dotnet build LD.Numeric.sln -c Release` |
+| 테스트 실행 | `dotnet test LD.Numeric.Test/LD.Numeric.Test.csproj` |
+| 특정 테스트 실행 | `dotnet test --filter "FullyQualifiedName~TestMethodName"` |
 
 저장소 루트에서 Unity 런타임을 포함한 전체 소스의 포맷을 검사한다.
 

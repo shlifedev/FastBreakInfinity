@@ -2,15 +2,11 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// 게임 시나리오 테스트 (실제 사용 케이스)
-/// </summary>
 public class GameScenarioTests
 {
     [Test]
     public void GameScenario_CurrencyAccumulation()
     {
-        // 재화 누적 시나리오
         BigDouble currency = BigDouble.Zero;
         BigDouble income = new BigDouble(1.5, 10);
 
@@ -31,7 +27,6 @@ public class GameScenarioTests
     [Test]
     public void GameScenario_Purchase()
     {
-        // 구매 시나리오
         BigDouble money = new BigDouble("1.5e100");
         BigDouble price = new BigDouble("1.2e100");
 
@@ -46,7 +41,6 @@ public class GameScenarioTests
     [Test]
     public void GameScenario_Multiplier()
     {
-        // 배율 적용 시나리오
         BigDouble baseValue = new BigDouble("1e50");
         BigDouble multiplier = new BigDouble(2.5);
 
@@ -58,7 +52,6 @@ public class GameScenarioTests
     [Test]
     public void GameScenario_ExponentialGrowth()
     {
-        // 지수 성장 시나리오
         BigDouble value = new BigDouble(1.0);
         BigDouble growthRate = new BigDouble(1.1);
 

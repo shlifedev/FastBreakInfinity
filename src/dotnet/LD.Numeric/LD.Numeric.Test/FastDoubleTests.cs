@@ -2,13 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// FastDouble 종합 테스트 — ParseDouble과 OptimizeToString
-/// </summary>
 public class FastDoubleTests
 {
-    // ===== ParseDouble =====
-
     [Test]
     public void ParseDouble_PlainInteger()
     {
@@ -40,7 +35,6 @@ public class FastDoubleTests
     [Test]
     public void ParseDouble_TruncatesBeyondMaxDecimalPlaces()
     {
-        // 반올림이 아니라 잘라냄
         Assert.That(FastDouble.ParseDouble("123.456789", 2), Is.EqualTo(123.45));
         Assert.That(FastDouble.ParseDouble("1.999999999", 3), Is.EqualTo(1.999));
     }
@@ -103,7 +97,6 @@ public class FastDoubleTests
     [Test]
     public void ParseDouble_RoundTripsWithBigDoubleValues()
     {
-        // 게임 세이브 데이터 라운드트립 시나리오
         double[] values = { 0, 1, 999.5, 12345.678901, 1e15, 5e-5 };
         foreach (var value in values)
         {
@@ -116,8 +109,6 @@ public class FastDoubleTests
             );
         }
     }
-
-    // ===== OptimizeToString =====
 
     [Test]
     public void OptimizeToString_BasicRounding()
@@ -179,7 +170,6 @@ public class FastDoubleTests
     [Test]
     public void OptimizeToString_SmallFraction_PadsLeadingZeros()
     {
-        // 소수부 앞자리 0이 유지돼야 함 (1.05 → "1.05", "1.5" 아님)
         Assert.That((1.05).OptimizeToString(2), Is.EqualTo("1.05"));
         Assert.That((10.001).OptimizeToString(3), Is.EqualTo("10.001"));
     }

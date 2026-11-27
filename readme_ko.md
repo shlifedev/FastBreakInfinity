@@ -64,12 +64,12 @@ if (gold >= cost)
 
 `double`과 마찬가지로 `NaN == NaN`은 거짓이고 `NaN.Equals(NaN)`은 참이므로 NaN을 딕셔너리 키로 사용할 수 있습니다. `Equals(other, tolerance)`는 두 수의 차이를 절댓값이 더 큰 수에 상대적으로 비교합니다. 허용 오차는 0 이상이어야 하며 NaN은 항상 거짓, 무한대는 부호가 같을 때만 참입니다.
 
-```cs
-new BigDouble(999).ToString();    // "999"
-new BigDouble(1000).ToString();   // "1.00A"
-new BigDouble("1e6").ToString();  // "1.00B"
-new BigDouble("1e81").ToString(); // "1.00AA"
-```
+| 표현식 | 반환 문자열 |
+| --- | --- |
+| `new BigDouble(999).ToString()` | `"999"` |
+| `new BigDouble(1000).ToString()` | `"1.00A"` |
+| `new BigDouble("1e6").ToString()` | `"1.00B"` |
+| `new BigDouble("1e81").ToString()` | `"1.00AA"` |
 
 알파벳 단위는 1000배 단위로 증가합니다.
 
@@ -108,3 +108,7 @@ dotnet run --project src/dotnet/LD.Numeric/LD.GameSample
 
 많은 최적화가 이루어졌습니다.
 큰 숫자를 자주 사용하는 환경에서 CPU 시간과 메모리 사용량을 최소화하고 싶다면, 이 라이브러리를 사용해 보세요.
+
+## 출처
+
+`AffordGeometricSeries`는 Trimps의 구매 공식을 응용했습니다. 선택 기능인 `AscensionPenalty`와 `Egg`는 각각 Realm Grinder와 Cookie Clicker에서 가져왔습니다. `SumArithmeticSeries`와 `EfficiencyOfPurchase`의 공식은 각각 [Mathwords](http://www.mathwords.com/a/arithmetic_series.htm)와 [Frozen Cookies](http://cookieclicker.wikia.com/wiki/Frozen_Cookies_(JavaScript_Add-on)#Efficiency.3F_What.27s_that.3F)에서 가져왔습니다.

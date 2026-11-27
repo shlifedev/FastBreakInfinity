@@ -34,10 +34,6 @@ namespace LD.Numeric.IdleNumber
             Array.Clear(ReverseUnitCache, 0, ReverseUnitCache.Length);
         }
 
-        /// <summary>
-        /// 알파벳 단위를 0-indexed 인덱스로 변환 (A=0, B=1, ..., Z=25, AA=26)
-        /// GetAlphabetUnit의 역함수.
-        /// </summary>
         public static long GetIndexFromUnit(string unit)
         {
             if (string.IsNullOrEmpty(unit))
@@ -62,7 +58,6 @@ namespace LD.Numeric.IdleNumber
             long index = -1;
             foreach (char c in unit)
             {
-                // 소문자/공백이 c-'A' 계산을 그대로 타면 쓰레기 지수가 됨 ("1.5a" → 1.5e99)
                 if (c < 'A' || c > 'Z')
                 {
                     throw new FormatException(
@@ -75,9 +70,6 @@ namespace LD.Numeric.IdleNumber
             return index;
         }
 
-        /// <summary>
-        /// 알파벳을 반환합니다. 인덱스는 0 = A , 1 = B , 2 = C, 26 = AA 로 1마다 계산됩니다.
-        /// </summary>
         public static string GetAlphabetUnit(long index)
         {
             if (index < 0)
@@ -111,12 +103,6 @@ namespace LD.Numeric.IdleNumber
 
         public static string GetAlphabetUnit(int index) => GetAlphabetUnit((long)index);
 
-        /// <summary>
-        /// -1~2 사이의 값을 입력시 빈 스트링이 반환됩니다.
-        ///  지수를 통해 알파벳 반환 3~5 = A, 6~8 = B, 9~11 = C . . .
-        /// </summary>
-        /// <param name="exponent"></param>
-        /// <returns></returns>
         public static string GetAlphabetUnitFromExponent(int exponent)
         {
             var index = (exponent / 3) - 1;

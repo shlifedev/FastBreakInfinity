@@ -2,9 +2,6 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigValueInfo.ExponentFormatToBigValueInfo 직접 테스트 — e 표기법 수동 파서
-/// </summary>
 public class BigValueInfoTests
 {
     [Test]
@@ -68,14 +65,14 @@ public class BigValueInfoTests
 
     [TestCase("")]
     [TestCase(null)]
-    [TestCase("e5")] // 가수 없음
-    [TestCase("1e")] // 지수 숫자 없음
-    [TestCase("1.2.3")] // 소수점 중복
-    [TestCase("1e5e3")] // e 중복
-    [TestCase("1e2.5")] // 지수에 소수점
-    [TestCase("1-2e5")] // 부호가 가운데
-    [TestCase("12x")] // 숫자가 아닌 문자
-    [TestCase("1e92233720368547758079")] // long 오버플로
+    [TestCase("e5")]
+    [TestCase("1e")]
+    [TestCase("1.2.3")]
+    [TestCase("1e5e3")]
+    [TestCase("1e2.5")]
+    [TestCase("1-2e5")]
+    [TestCase("12x")]
+    [TestCase("1e92233720368547758079")]
     [TestCase("1e9223372036854775808")]
     [TestCase("1e-9223372036854775809")]
     public void Parse_InvalidInput_ThrowsFormatException(string? input)

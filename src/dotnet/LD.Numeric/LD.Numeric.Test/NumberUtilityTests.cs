@@ -2,9 +2,6 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// NumberUtility.GetDigits 테스트 — 정수부 자릿수 계산
-/// </summary>
 public class NumberUtilityTests
 {
     [TestCase(0.0, 0)]

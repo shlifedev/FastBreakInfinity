@@ -2,9 +2,6 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble 수학 함수 (Pow, Log, Sqrt, Round, Floor, Ceiling) 테스트
-/// </summary>
 public class MathFunctionTests
 {
     [TestCase(1)]
@@ -48,8 +45,6 @@ public class MathFunctionTests
         Assert.That(BigDouble.Cosh(1000).Mantissa, Is.EqualTo(9.850355570085235).Within(1e-11));
     }
 
-    // ===== Pow 테스트 =====
-
     [Test]
     public void Pow_IntegerPower()
     {
@@ -79,8 +74,6 @@ public class MathFunctionTests
         Assert.That(result.Exponent == 100, Is.True);
     }
 
-    // ===== Log 테스트 =====
-
     [Test]
     public void Log10_Basic()
     {
@@ -89,8 +82,6 @@ public class MathFunctionTests
 
         Assert.That(Math.Abs(result - 100.699) < 0.01, Is.True);
     }
-
-    // ===== Sqrt 테스트 =====
 
     [Test]
     public void Sqrt_Basic()
@@ -110,8 +101,6 @@ public class MathFunctionTests
 
         Assert.That(result.Exponent == 50, Is.True);
     }
-
-    // ===== Round/Floor/Ceiling 테스트 =====
 
     [Test]
     public void Round_SmallExponent()

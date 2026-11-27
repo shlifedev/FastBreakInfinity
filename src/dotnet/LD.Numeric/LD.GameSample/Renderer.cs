@@ -3,13 +3,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.GameSample;
 
-/// <summary>
-/// 콘솔 화면 그리기. 커서를 맨 위로 옮기고 덮어써서 깜빡임을 줄인다.
-/// </summary>
 public class Renderer
 {
-    // 한글은 콘솔에서 2칸을 차지해 공백 패딩으론 이전 프레임 잔상을 정확히 못 지운다.
-    // ANSI escape로 줄 끝(\e[K)과 화면 아래(\e[J)를 지우는 방식을 쓴다.
     private const string ClearLineEnd = "\x1b[K";
     private const string ClearBelow = "\x1b[J";
 
@@ -22,7 +17,6 @@ public class Renderer
 
         AppendLine("=== LD.Numeric 아이들 게임 샘플 ===");
         AppendLine("");
-        // ToString()은 알파벳 단위(1.50A), ToStringMantissaExponent()는 내부 표현을 보여준다
         AppendLine($"골드     : {state.Gold}  ({state.Gold.ToStringMantissaExponent()})");
         AppendLine($"초당 생산: {state.GoldPerSecond}/s");
         AppendLine($"구매 모드: {BuyModeLabel(buyMode)}");

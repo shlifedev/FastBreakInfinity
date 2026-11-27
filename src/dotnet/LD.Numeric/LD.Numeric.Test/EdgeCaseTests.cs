@@ -2,13 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble 경계값 및 극단 케이스 테스트
-/// </summary>
 public class EdgeCaseTests
 {
-    // ===== AdjustedMantissa 테스트 =====
-
     [Test]
     public void AdjustedMantissa_DoesNotMutateOriginalValue()
     {
@@ -31,8 +26,6 @@ public class EdgeCaseTests
 
         Assert.That(first == second, Is.True, "연속 호출 시 일관된 결과");
     }
-
-    // ===== 경계값 테스트 =====
 
     [Test]
     public void EdgeCase_MaxExponent()

@@ -3,13 +3,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// AlphabetConverter 테스트 — 숫자↔알파벳 단위 변환과 역변환
-/// </summary>
 public class AlphabetConverterTests
 {
-    // ===== GetExponent =====
-
     [TestCase(1000.0, 3L)]
     [TestCase(999999.0, 3L)]
     [TestCase(1e6, 6L)]
@@ -48,7 +43,6 @@ public class AlphabetConverterTests
     [Test]
     public void GetExponent_NonPositive_Throws()
     {
-        // 로그를 계산하기 전에 두 오버로드가 모두 정의역을 검증한다.
         Assert.Throws<ArgumentOutOfRangeException>(() => AlphabetConverter.GetExponent(0.0));
         Assert.Throws<ArgumentOutOfRangeException>(() => AlphabetConverter.GetExponent(-5.0));
         Assert.Throws<ArgumentOutOfRangeException>(() => AlphabetConverter.GetExponent(double.NaN));
@@ -62,8 +56,6 @@ public class AlphabetConverterTests
             AlphabetConverter.GetExponent(BigInteger.MinusOne)
         );
     }
-
-    // ===== ConvertToAlphabetUnit =====
 
     [Test]
     public void ConvertToAlphabetUnit_BelowThousand_ReturnsPlainNumber()
@@ -98,8 +90,6 @@ public class AlphabetConverterTests
         Assert.That(1000f.ConvertToAlphabetUnit(), Is.EqualTo("1.00A"));
         Assert.That(500.ConvertToAlphabetUnit(), Is.EqualTo("500"));
     }
-
-    // ===== ConvertFromAlphabetUnit (역변환) =====
 
     [Test]
     public void ConvertFromAlphabetUnit_BasicUnits()
@@ -179,8 +169,6 @@ public class AlphabetConverterTests
     {
         Assert.That(AlphabetConverter.ConvertFromAlphabetUnit(text), Is.EqualTo(expected));
     }
-
-    // ===== BigDouble 쪽 알파벳 단위 API =====
 
     [Test]
     public void BigDouble_GetExponentFromAlphabetUnit_KnownRanges()

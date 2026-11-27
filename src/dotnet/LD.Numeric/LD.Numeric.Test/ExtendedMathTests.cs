@@ -2,14 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble 확장 수학 함수 테스트 — Abs/Negate/Sign/Reciprocate/Cbrt/Exp/Factorial/
-/// 쌍곡함수/로그 변형/Pow 엣지/증감 연산자
-/// </summary>
 public class ExtendedMathTests
 {
-    // ===== Abs / Negate / Sign =====
-
     [Test]
     public void Abs_NegativeAndPositive()
     {
@@ -33,8 +27,6 @@ public class ExtendedMathTests
         Assert.That(BigDouble.Sign(BigDouble.Zero), Is.EqualTo(0));
     }
 
-    // ===== Reciprocate =====
-
     [Test]
     public void Reciprocate_Basic()
     {
@@ -56,8 +48,6 @@ public class ExtendedMathTests
         );
     }
 
-    // ===== 증감 연산자 =====
-
     [Test]
     public void IncrementDecrement_Operators()
     {
@@ -68,8 +58,6 @@ public class ExtendedMathTests
         a--;
         Assert.That(a == new BigDouble(4), Is.True);
     }
-
-    // ===== Pow 엣지 =====
 
     [Test]
     public void Pow_IntegerPower_Exact()
@@ -134,8 +122,6 @@ public class ExtendedMathTests
         Assert.That(BigDouble.Pow10(100.0) == new BigDouble(1, 100), Is.True);
     }
 
-    // ===== Sqrt / Cbrt =====
-
     [Test]
     public void Sqrt_NegativeValue_ReturnsNaN()
     {
@@ -145,7 +131,6 @@ public class ExtendedMathTests
     [Test]
     public void Sqrt_HugeValue_OddExponent()
     {
-        // sqrt(1e101) = 10^50.5 ≈ 3.162e50
         var result = BigDouble.Sqrt(new BigDouble(1, 101));
         Assert.That(result.Equals(new BigDouble(3.16227766016838, 50), 1e-9), Is.True);
     }
@@ -161,7 +146,6 @@ public class ExtendedMathTests
     [Test]
     public void Cbrt_HugeValue_ExponentModBranches()
     {
-        // 지수 mod 3이 0/1/2인 케이스를 모두 — log10 기준으로 검증
         Assert.That(
             BigDouble.Log10(BigDouble.Cbrt(new BigDouble(1, 99))),
             Is.EqualTo(33.0).Within(1e-9)
@@ -176,8 +160,6 @@ public class ExtendedMathTests
         );
     }
 
-    // ===== Exp / Factorial =====
-
     [Test]
     public void Exp_Basic()
     {
@@ -188,7 +170,6 @@ public class ExtendedMathTests
     [Test]
     public void Exp_LargeValue_MatchesLog()
     {
-        // exp(1000)의 자연로그는 1000이어야 함
         var result = BigDouble.Exp(1000);
         Assert.That(BigDouble.Ln(result), Is.EqualTo(1000.0).Within(1e-6));
     }
@@ -196,7 +177,6 @@ public class ExtendedMathTests
     [Test]
     public void Factorial_SmallValues_NearExact()
     {
-        // 스털링 근사라 정확하지 않음 — 상대 오차로 검증
         Assert.That(BigDouble.Factorial(5).Equals(new BigDouble(120), 1e-6), Is.True);
         Assert.That(BigDouble.Factorial(10).Equals(new BigDouble(3628800), 1e-6), Is.True);
     }
@@ -204,7 +184,6 @@ public class ExtendedMathTests
     [Test]
     public void Factorial_LargeValue_MatchesStirlingMagnitude()
     {
-        // 100! ≈ 9.33e157
         var result = BigDouble.Factorial(100);
         Assert.That(BigDouble.Log10(result), Is.EqualTo(157.97).Within(0.01));
     }
@@ -212,7 +191,6 @@ public class ExtendedMathTests
     [Test]
     public void Factorial_ResultExponentOverflow_ReturnsPositiveInfinity()
     {
-        // n=1e30이면 log10(n!) ≈ 3e31로 long 지수 범위를 초과 — 포화된 가짜 값이 아니라 Infinity여야 함
         var result = BigDouble.Factorial(new BigDouble(1, 30));
         Assert.That(BigDouble.IsPositiveInfinity(result), Is.True, $"실제 {result}");
     }
@@ -220,12 +198,9 @@ public class ExtendedMathTests
     [Test]
     public void Factorial_BeyondDoubleRange_ReturnsPositiveInfinity()
     {
-        // double로 변환 불가능한 입력(1e400)은 NaN으로 붕괴하지 않고 Infinity여야 함
         var result = BigDouble.Factorial(new BigDouble(1, 400));
         Assert.That(BigDouble.IsPositiveInfinity(result), Is.True, $"실제 {result}");
     }
-
-    // ===== 쌍곡함수 =====
 
     [Test]
     public void Hyperbolic_BasicValues()
@@ -250,12 +225,9 @@ public class ExtendedMathTests
         Assert.That(double.IsNaN(BigDouble.Atanh(-2)), Is.True);
     }
 
-    // ===== 로그 변형 =====
-
     [Test]
     public void Log10_OutOfDomain_FollowsIeeeSemantics()
     {
-        // 음수는 NaN, 0은 -Infinity — Math.Log10과 동일한 의미를 유지해야 한다
         Assert.That(double.IsNaN(BigDouble.Log10(new BigDouble(-5))), Is.True);
         Assert.That(double.IsNegativeInfinity(BigDouble.Log10(BigDouble.Zero)), Is.True);
     }
@@ -300,8 +272,6 @@ public class ExtendedMathTests
         Assert.That(double.IsNaN(BigDouble.Log(5, 0.0)), Is.True);
     }
 
-    // ===== Min / Max NaN 처리 =====
-
     [Test]
     public void MinMax_WithNaN_ReturnsNaN()
     {
@@ -310,8 +280,6 @@ public class ExtendedMathTests
         Assert.That(BigDouble.IsNaN(BigDouble.Min(BigDouble.NaN, 5)), Is.True);
         Assert.That(BigDouble.IsNaN(BigDouble.Min(5, BigDouble.NaN)), Is.True);
     }
-
-    // ===== 확장 메서드 =====
 
     [Test]
     public void ExtensionMethods_MatchStaticMethods()

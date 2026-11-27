@@ -2,13 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// AlphabetManager 직접 테스트 — 인덱스/단위 변환과 캐시 일관성
-/// </summary>
 public class AlphabetManagerTests
 {
-    // ===== GetAlphabetUnit (index → 단위) =====
-
     [TestCase(0L, "A")]
     [TestCase(1L, "B")]
     [TestCase(25L, "Z")]
@@ -42,8 +37,6 @@ public class AlphabetManagerTests
             );
         }
     }
-
-    // ===== GetIndexFromUnit (단위 → index) =====
 
     [TestCase("A", 0L)]
     [TestCase("Z", 25L)]
@@ -79,12 +72,9 @@ public class AlphabetManagerTests
     [Test]
     public void GetIndexFromUnit_LongUnit_NoOverflow()
     {
-        // 7글자 이상 단위에서 (int)Math.Pow(26, n) 방식은 오버플로가 났던 영역
         var unit = AlphabetManager.GetAlphabetUnit(10_000_000_000L);
         Assert.That(AlphabetManager.GetIndexFromUnit(unit), Is.EqualTo(10_000_000_000L));
     }
-
-    // ===== GetAlphabetUnitFromExponent =====
 
     [TestCase(0L, "")]
     [TestCase(1L, "")]
@@ -120,8 +110,6 @@ public class AlphabetManagerTests
             );
         }
     }
-
-    // ===== 캐시 일관성 =====
 
     [Test]
     public void GetAlphabetUnit_RepeatedCalls_ReturnSameResult()

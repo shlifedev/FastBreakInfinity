@@ -2,9 +2,6 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// 기존 테스트 (레거시)
-/// </summary>
 public class LegacyTests
 {
     [SetUp]
@@ -96,9 +93,6 @@ public class LegacyTests
         Assert.IsTrue(money == new BigDouble("9.9e1000"));
     }
 
-    /// <summary>
-    /// 정확도 테스트
-    /// </summary>
     [Test]
     public void DigitAaccuracy()
     {

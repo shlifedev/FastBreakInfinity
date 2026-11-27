@@ -64,12 +64,12 @@ if (gold >= cost)
 
 As with `double`, `NaN == NaN` is false and `NaN.Equals(NaN)` is true, so NaN can serve as a dictionary key. `Equals(other, tolerance)` compares the difference relative to the larger magnitude. It requires a nonnegative tolerance, excludes NaN, and matches infinities only when their signs agree.
 
-```cs
-new BigDouble(999).ToString();    // "999"
-new BigDouble(1000).ToString();   // "1.00A"
-new BigDouble("1e6").ToString();  // "1.00B"
-new BigDouble("1e81").ToString(); // "1.00AA"
-```
+| Expression | Returned string |
+| --- | --- |
+| `new BigDouble(999).ToString()` | `"999"` |
+| `new BigDouble(1000).ToString()` | `"1.00A"` |
+| `new BigDouble("1e6").ToString()` | `"1.00B"` |
+| `new BigDouble("1e81").ToString()` | `"1.00AA"` |
 
 Alphabet units are used every 1000x range:
 
@@ -113,3 +113,7 @@ Run `dotnet run --project src/dotnet/LD.Numeric/Example` for a menu with a line-
 
 Many optimizations have been made.
 If you want to minimize CPU time and memory usage in an environment where you frequently use big doubles, try this library.
+
+## Credits
+
+`AffordGeometricSeries` was adapted from Trimps. The optional `AscensionPenalty` and `Egg` methods come from Realm Grinder and Cookie Clicker, respectively. The formulas for `SumArithmeticSeries` and `EfficiencyOfPurchase` come from [Mathwords](http://www.mathwords.com/a/arithmetic_series.htm) and [Frozen Cookies](http://cookieclicker.wikia.com/wiki/Frozen_Cookies_(JavaScript_Add-on)#Efficiency.3F_What.27s_that.3F).

@@ -29,9 +29,6 @@ namespace LD.Numeric.IdleNumber
             "F17",
         };
 
-        /// <summary>
-        /// 값의 3자리 단위 지수를 계산합니다.
-        /// </summary>
         public static long GetExponent(double value)
         {
             if (!(value > 0) || double.IsInfinity(value))
@@ -43,7 +40,6 @@ namespace LD.Numeric.IdleNumber
                 );
             }
 
-            // Log10은 경계 양옆에서 같은 값을 줄 수 있으므로 가장 가까운 경계와 직접 비교한다.
             long exponent = (long)Math.Round(Math.Log10(value) / ExponentUnit) * ExponentUnit;
             double boundary = Math.Pow(10, exponent);
             if (value >= 1 && value < boundary)
@@ -53,7 +49,6 @@ namespace LD.Numeric.IdleNumber
             return exponent;
         }
 
-        // int, float, long은 암묵적으로 double로 변환되어 위 메서드 사용
         public static long GetExponent(BigInteger value)
         {
             if (value.Sign <= 0)
@@ -85,17 +80,14 @@ namespace LD.Numeric.IdleNumber
             while (lastAlphaIndex >= 0 && char.IsLetter(str[lastAlphaIndex]))
                 lastAlphaIndex--;
 
-            // 숫자 부분이 없는 경우 (전체가 알파벳)
             if (lastAlphaIndex < 0)
                 return 0;
 
-            // 알파벳 부분이 없는 경우 (전체가 숫자)
             if (lastAlphaIndex == str.Length - 1)
                 return double.Parse(str, CultureInfo.InvariantCulture);
 
             var number = str.AsSpan(0, lastAlphaIndex + 1).TrimEnd();
             long index = AlphabetManager.GetIndexFromUnit(str.AsSpan(lastAlphaIndex + 1));
-            // 단위 지수를 적용한 뒤 double로 한 번만 파싱한다 (0.1 × 10^309도 유한).
             int marker = number.IndexOfAny('e', 'E');
             if (marker >= 0 || index >= long.MaxValue / ExponentUnit)
             {
@@ -142,7 +134,6 @@ namespace LD.Numeric.IdleNumber
             }
             catch (OverflowException)
             {
-                // Unity Mono는 범위를 넘는 유효 숫자를 Infinity로 반환하는 대신 예외를 던진다.
                 return literal.TrimStart()[0] == '-'
                     ? double.NegativeInfinity
                     : double.PositiveInfinity;
@@ -173,7 +164,6 @@ namespace LD.Numeric.IdleNumber
             double newNumber = number / divisor;
             if (maxDecimalPoint <= 15)
                 newNumber = Math.Round(newNumber, maxDecimalPoint);
-            // 반올림이 단위 경계(1000)에 도달하면 단위를 한 칸 올림 (999999 → 1.00B)
             if (Math.Abs(newNumber) >= 1000)
             {
                 newNumber /= 1000;

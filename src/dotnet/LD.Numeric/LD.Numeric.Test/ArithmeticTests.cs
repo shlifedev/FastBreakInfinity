@@ -2,13 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble 산술 연산 (Add, Subtract, Multiply, Divide) 테스트
-/// </summary>
 public class ArithmeticTests
 {
-    // ===== Add 테스트 =====
-
     [Test]
     public void Add_SameExponent()
     {
@@ -39,8 +34,6 @@ public class ArithmeticTests
         Assert.That(result == a, Is.True, "지수 차이 > 17이면 큰 값 반환");
     }
 
-    // ===== Subtract 테스트 =====
-
     [Test]
     public void Subtract_SameValue_ShouldBeZero()
     {
@@ -65,8 +58,6 @@ public class ArithmeticTests
         );
     }
 
-    // ===== Multiply 테스트 =====
-
     [Test]
     public void Multiply_Basic()
     {
@@ -87,8 +78,6 @@ public class ArithmeticTests
         Assert.That(result.Mantissa >= 2.4 && result.Mantissa <= 2.6, Is.True, "가수 2.5");
         Assert.That(result.Exponent == 201, Is.True, "지수 201");
     }
-
-    // ===== Divide 테스트 =====
 
     [Test]
     public void Divide_Basic()

@@ -3,13 +3,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble 변환 테스트 — 암묵/명시적 변환, ToDouble/ToFloat 경계, 생성자, 해시/동등성 계약
-/// </summary>
 public class ConversionTests
 {
-    // ===== 암묵적 변환 =====
-
     [Test]
     public void ImplicitConversion_FromNumericTypes()
     {
@@ -48,8 +43,6 @@ public class ConversionTests
         Assert.That(BigDouble.IsPositiveInfinity(posInf), Is.True);
         Assert.That(BigDouble.IsNegativeInfinity(negInf), Is.True);
     }
-
-    // ===== 생성자 =====
 
     [Test]
     public void Constructor_StringWithExponent()
@@ -109,13 +102,9 @@ public class ConversionTests
     [Test]
     public void CompareTo_NullLiteral_ResolvesToStringConversion_ThrowsClearException()
     {
-        // 캐스트 없는 null 리터럴은 implicit string→BigDouble 변환을 타는 오버로드로 해석됨.
-        // NRE 대신 ArgumentNullException이 나와야 함. object로 캐스트하면 CompareTo(object)로 감.
         string? nullString = null;
         Assert.Throws<ArgumentNullException>(() => new BigDouble(5).CompareTo(nullString!));
     }
-
-    // ===== ToDouble 경계 =====
 
     [Test]
     public void ToDouble_ExponentAboveDoubleRange_ReturnsInfinity()
@@ -168,8 +157,6 @@ public class ConversionTests
         Assert.That(new BigDouble(1.5, 10).ToFloat(), Is.EqualTo(1.5e10f).Within(1e4f));
     }
 
-    // ===== ToStringMantissaExponent =====
-
     [Test]
     public void ToStringMantissaExponent_Format()
     {
@@ -207,12 +194,9 @@ public class ConversionTests
         }
     }
 
-    // ===== Equals(object) / GetHashCode / CompareTo(object) 계약 =====
-
     [Test]
     public void EqualsObject_NonBigDouble_ReturnsFalse()
     {
-        // 캐스트 없이 넘기면 implicit 변환 때문에 Equals(BigDouble) 오버로드로 가버림
         Assert.That(new BigDouble(5).Equals((object)"5"), Is.False);
         Assert.That(new BigDouble(5).Equals((object)null!), Is.False);
         Assert.That(
@@ -232,7 +216,6 @@ public class ConversionTests
     [Test]
     public void GetHashCode_EqualValues_HaveEqualHashes()
     {
-        // 10e99와 1e100은 정규화 후 같은 값
         var a = new BigDouble(10, 99);
         var b = new BigDouble(1, 100);
         Assert.That(a == b, Is.True);

@@ -41,17 +41,6 @@ namespace LD.Numeric.IdleNumber
             return Math.Pow(10.0, exp);
         }
 
-        /// <summary>
-        /// 스트링을 더블로 변환함. null/빈 문자열은 0을 반환한다.
-        /// NaN, Infinity, -Infinity 및 invariant 숫자 표기를 허용한다.
-        /// </summary>
-        /// <param name="s">스트링 (invariant 표기만 허용, 공백·천 단위 구분자 불가)</param>
-        /// <param name="maxDecimalPlaces">
-        /// 초과하는 소수 자릿수는 반올림 없이 절삭된다. 정확도를 버리고 속도를 얻는 손잡이.
-        /// 지수 표기(e/E) 입력에는 적용되지 않음 — 리터럴 자릿수 기준 절삭이라 지수 스케일링을
-        /// 거치면 정수부 유효숫자까지 깎이기 때문에 전체 정밀도로 파싱한다.
-        /// </param>
-        /// <exception cref="FormatException"></exception>
         public static double ParseDouble(string s, int maxDecimalPlaces = 6)
         {
             if (string.IsNullOrEmpty(s))
@@ -61,10 +50,6 @@ namespace LD.Numeric.IdleNumber
             return ParseDouble(s.AsSpan(), maxDecimalPlaces);
         }
 
-        /// <summary>
-        /// substring 할당 없이 파싱할 수 있는 오버로드.
-        /// 동작은 <see cref="ParseDouble(string, int)"/>와 동일하다.
-        /// </summary>
         public static double ParseDouble(ReadOnlySpan<char> s, int maxDecimalPlaces = 6)
         {
             if (s.IsEmpty)
@@ -96,7 +81,6 @@ namespace LD.Numeric.IdleNumber
                     if (hasExponent)
                     {
                         hasExponentDigits = true;
-                        // 소수 자릿수로 상쇄할 수 있는 지수 범위까지만 누적한다.
                         if (exponent <= int.MaxValue)
                             exponent = exponent * 10 + (c - '0');
                     }
@@ -109,7 +93,6 @@ namespace LD.Numeric.IdleNumber
                             if (decimalPoint >= 0)
                                 decimalPlaces++;
                         }
-                        // maxDecimalPlaces 초과 소수 자릿수는 절삭
                     }
                 }
                 else if (c == '.' && decimalPoint < 0 && !hasExponent)
@@ -119,7 +102,6 @@ namespace LD.Numeric.IdleNumber
                 else if ((c == 'e' || c == 'E') && !hasExponent)
                 {
                     hasExponent = true;
-                    // 지수부 부호 처리 (+/-)
                     if (i + 1 < s.Length && (s[i + 1] == '-' || s[i + 1] == '+'))
                     {
                         negativeExponent = s[i + 1] == '-';
@@ -138,18 +120,15 @@ namespace LD.Numeric.IdleNumber
                 }
             }
 
-            // "-", ".", "1e" 같은 입력이 조용히 0/1로 로드되는 것을 막는다
             if (!hasMantissaDigits || (hasExponent && !hasExponentDigits))
             {
                 throw new FormatException("입력값이 잘못 됨 => " + s.ToString());
             }
 
-            // 소수부 보정과 지수를 합쳐 곱셈/나눗셈 한 번으로 처리 — 이중 반올림 방지
             if (mantissa == 0)
                 return isNegative ? -0.0 : 0.0;
             long netExponent = (negativeExponent ? -exponent : exponent) - decimalPlaces;
-            // 2^53 아래의 정수 가수와 10^0~10^22는 double로 정확히 표현된다.
-            // 이 범위 밖에서는 중간 반올림과 스케일 오버플로를 피하도록 런타임 파서를 사용한다.
+            // 정수 가수와 10의 거듭제곱이 모두 정확히 표현될 때만 직접 스케일링한다.
             if (mantissa >= (1L << 53) || Math.Abs(netExponent) >= PositivePowersOf10.Length)
             {
                 if (!hasExponent && decimalPoint >= 0)
@@ -163,7 +142,6 @@ namespace LD.Numeric.IdleNumber
                     )
                 )
                     return parsed == 0 && isNegative ? -0.0 : parsed;
-                // 오버플로 시 Infinity 대신 false를 반환하는 런타임과 호환
                 return isNegative ? double.NegativeInfinity : double.PositiveInfinity;
             }
             if (netExponent > 0)
@@ -189,7 +167,6 @@ namespace LD.Numeric.IdleNumber
                 return "NaN";
             if (double.IsInfinity(value))
                 return value > 0 ? "Infinity" : "-Infinity";
-            // long 캐스팅 범위를 벗어나는 값은 표준 포맷터로 처리
             if (Math.Abs(value) >= 9.2e18 || decimalPlaces > 17)
             {
                 return value.ToString("F" + decimalPlaces, CultureInfo.InvariantCulture);
@@ -217,7 +194,6 @@ namespace LD.Numeric.IdleNumber
                 decimalPlaces >= 16
                     ? RoundHighPrecisionFraction(fractionalPart, decimalPlaces, (long)scale)
                     : (long)Math.Round(fractionalPart * scale, MidpointRounding.AwayFromZero);
-            // 소수부 반올림이 자리올림되면 정수부로 캐리 (예: 1.999 → 2.00)
             if (fraction >= (long)scale)
             {
                 integerPart++;
@@ -232,19 +208,15 @@ namespace LD.Numeric.IdleNumber
 
         private static long RoundHighPrecisionFraction(double fraction, int places, long scale)
         {
-            // fraction = significand * 2^(biasedExponent - 1023 - 52).
-            // 10^places의 2 인수를 약분하면 분자는 53비트 가수 * 5^places라서
-            // 17자리까지는 decimal의 96비트 정수 범위에 정확히 들어간다.
             long bits = BitConverter.DoubleToInt64Bits(fraction);
             int biasedExponent = (int)(bits >> 52);
             int divisorShift = 1023 + 52 - biasedExponent - places;
-            // 분자가 2^93보다 작으므로 이 구간의 몫은 0.5 미만이다.
+            // 분자가 2^93 미만이므로 이 구간의 몫은 0.5 미만이다.
             if (divisorShift >= 95)
                 return 0;
 
             long significand = (bits & ((1L << 52) - 1)) | (1L << 52);
             decimal numerator = (decimal)significand * (scale >> places);
-            // 두 인수를 각각 long으로 만들면 2^94까지 정확히 계산할 수 있다.
             decimal divisor =
                 (decimal)(1L << (divisorShift / 2)) * (1L << ((divisorShift + 1) / 2));
             decimal remainder = numerator % divisor;

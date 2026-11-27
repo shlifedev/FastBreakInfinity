@@ -10,9 +10,6 @@ public enum BuyMode
     Max,
 }
 
-/// <summary>
-/// 게임 로직 전체. Console에 의존하지 않아 시뮬레이션/테스트로 돌릴 수 있다.
-/// </summary>
 public class GameState
 {
     public BigDouble Gold { get; private set; } = BigDouble.Zero;
@@ -21,7 +18,6 @@ public class GameState
 
     public GameState()
     {
-        // 티어 간 비용 격차를 크게 잡아 플레이 몇 분 안에 알파벳 단위(A, B...)가 등장한다
         Generators = new List<Generator>
         {
             new("광부", baseCost: 10, costRatio: 1.15, baseProduction: 1),

@@ -26,7 +26,7 @@ namespace LD.Numeric.IdleNumber
             {
                 mantissaText = mantissaText.Slice(0, exponentMarker);
                 var exponentText = input.AsSpan(exponentMarker + 1);
-                // TryParse는 숫자 뒤의 NUL도 허용하므로 마지막 문자가 숫자인지 확인한다.
+                // TryParse는 지수 끝의 NUL도 허용한다.
                 if (
                     mantissaText.IsEmpty
                     || (uint)(input[input.Length - 1] - '0') > 9

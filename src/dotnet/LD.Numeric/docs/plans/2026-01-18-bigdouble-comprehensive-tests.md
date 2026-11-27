@@ -31,7 +31,6 @@
 [Test]
 public void Comparison_SameExponent_DifferentMantissa()
 {
-    // 같은 지수, 다른 가수 비교
     BigDouble a = new BigDouble(1.1, 100);
     BigDouble b = new BigDouble(1.2, 100);
 
@@ -66,7 +65,6 @@ git commit -m "test: 같은 지수에서 가수 비교 테스트 추가"
 [Test]
 public void Comparison_SmallMantissaDifference()
 {
-    // 소수점 아래 미세한 차이 비교
     BigDouble a = new BigDouble(1.000000001, 100);
     BigDouble b = new BigDouble(1.000000002, 100);
 
@@ -77,16 +75,13 @@ public void Comparison_SmallMantissaDifference()
 [Test]
 public void Comparison_VerySmallMantissaDifference()
 {
-    // 더 미세한 차이 (Tolerance = 1e-18 근처)
     BigDouble a = new BigDouble(1.0, 100);
     BigDouble b = new BigDouble(1.0 + 1e-15, 100);
 
-    // 이 차이가 감지되는지 확인
     Console.WriteLine($"a.Mantissa: {a.Mantissa}");
     Console.WriteLine($"b.Mantissa: {b.Mantissa}");
     Console.WriteLine($"diff: {b.Mantissa - a.Mantissa}");
 
-    // double 정밀도 한계 내에서 다르다면 다르게 인식해야 함
     if (Math.Abs(b.Mantissa - a.Mantissa) > double.Epsilon)
     {
         Assert.That(a != b, Is.True, "감지 가능한 차이는 다르게 처리해야 함");
@@ -119,7 +114,6 @@ git commit -m "test: 소수점 미세 차이 비교 테스트 추가"
 [Test]
 public void Comparison_DifferentExponent()
 {
-    // 다른 지수 비교 - 지수가 크면 무조건 큼
     BigDouble small = new BigDouble(9.9, 99);
     BigDouble large = new BigDouble(1.1, 100);
 
@@ -130,11 +124,9 @@ public void Comparison_DifferentExponent()
 [Test]
 public void Comparison_AdjacentExponent()
 {
-    // 인접 지수 비교 (경계값)
     BigDouble a = new BigDouble(9.999999999999999, 99);
     BigDouble b = new BigDouble(1.0, 100);
 
-    // 9.999...e99 < 1.0e100 (수학적으로 거의 같지만 다름)
     Assert.That(a < b, Is.True, "9.999...e99 < 1.0e100");
 }
 ```
@@ -164,11 +156,9 @@ git commit -m "test: 다른 지수 비교 테스트 추가"
 [Test]
 public void Comparison_NegativeNumbers()
 {
-    // 음수 비교
-    BigDouble a = new BigDouble(-1.1, 100);  // -1.1e100
-    BigDouble b = new BigDouble(-1.2, 100);  // -1.2e100
+    BigDouble a = new BigDouble(-1.1, 100);
+    BigDouble b = new BigDouble(-1.2, 100);
 
-    // -1.1e100 > -1.2e100 (음수에서는 절대값이 작은 것이 큼)
     Assert.That(a > b, Is.True, "-1.1e100 > -1.2e100");
     Assert.That(b < a, Is.True, "-1.2e100 < -1.1e100");
 }
@@ -176,7 +166,6 @@ public void Comparison_NegativeNumbers()
 [Test]
 public void Comparison_NegativeVsPositive()
 {
-    // 양수 vs 음수
     BigDouble positive = new BigDouble(1.0, 100);
     BigDouble negative = new BigDouble(-1.0, 100);
 
@@ -189,11 +178,9 @@ public void Comparison_NegativeVsPositive()
 [Test]
 public void Comparison_NegativeDifferentExponent()
 {
-    // 음수에서 다른 지수 비교
-    BigDouble a = new BigDouble(-1.1, 100);  // -1.1e100
-    BigDouble b = new BigDouble(-1.1, 99);   // -1.1e99
+    BigDouble a = new BigDouble(-1.1, 100);
+    BigDouble b = new BigDouble(-1.1, 99);
 
-    // -1.1e100 < -1.1e99 (절대값이 큰 음수가 더 작음)
     Assert.That(a < b, Is.True, "-1.1e100 < -1.1e99");
 }
 ```
@@ -223,7 +210,6 @@ git commit -m "test: 음수 비교 테스트 추가"
 [Test]
 public void Comparison_SpecialValues_NaN()
 {
-    // NaN 비교 - 모든 비교가 false여야 함
     BigDouble nan = BigDouble.NaN;
     BigDouble normal = new BigDouble(1.0, 100);
 
@@ -237,7 +223,6 @@ public void Comparison_SpecialValues_NaN()
 [Test]
 public void Comparison_SpecialValues_Infinity()
 {
-    // Infinity 비교
     BigDouble posInf = BigDouble.PositiveInfinity;
     BigDouble negInf = BigDouble.NegativeInfinity;
     BigDouble normal = new BigDouble(9.9, 999999);
@@ -250,7 +235,6 @@ public void Comparison_SpecialValues_Infinity()
 [Test]
 public void Comparison_SpecialValues_Zero()
 {
-    // Zero 비교
     BigDouble zero1 = BigDouble.Zero;
     BigDouble zero2 = new BigDouble(0.0);
     BigDouble positive = new BigDouble(1e-300);
@@ -300,10 +284,8 @@ public void Equals_WithTolerance()
     BigDouble a = new BigDouble(1.0, 100);
     BigDouble b = new BigDouble(1.0 + 1e-10, 100);
 
-    // 기본 Equals는 false
     Assert.That(a.Equals(b), Is.False, "정확한 비교는 false");
 
-    // tolerance 있으면 true
     Assert.That(a.Equals(b, 1e-9), Is.True, "1e-9 tolerance로는 같음");
     Assert.That(a.Equals(b, 1e-11), Is.False, "1e-11 tolerance로는 다름");
 }
@@ -311,11 +293,9 @@ public void Equals_WithTolerance()
 [Test]
 public void Equals_DifferentRepresentationSameValue()
 {
-    // 같은 값이지만 다른 표현
-    BigDouble a = new BigDouble(10.0, 99);   // 정규화 전
-    BigDouble b = new BigDouble(1.0, 100);   // 정규화 후
+    BigDouble a = new BigDouble(10.0, 99);
+    BigDouble b = new BigDouble(1.0, 100);
 
-    // 생성자에서 정규화되므로 같아야 함
     Console.WriteLine($"a: {a.Mantissa}e{a.Exponent}");
     Console.WriteLine($"b: {b.Mantissa}e{b.Exponent}");
 
@@ -362,16 +342,14 @@ public void Add_DifferentExponent_Small()
     BigDouble b = new BigDouble(1.0, 99);
     BigDouble result = a + b;
 
-    // 1e100 + 1e99 = 1.1e100
     Assert.That(result == new BigDouble(1.1, 100), Is.True, "1e100 + 1e99 = 1.1e100");
 }
 
 [Test]
 public void Add_DifferentExponent_Large()
 {
-    // 지수 차이가 17 이상이면 큰 값만 반환
     BigDouble a = new BigDouble(1.0, 100);
-    BigDouble b = new BigDouble(1.0, 80);  // 차이 20
+    BigDouble b = new BigDouble(1.0, 80);
     BigDouble result = a + b;
 
     Assert.That(result == a, Is.True, "지수 차이 > 17이면 큰 값 반환");
@@ -390,15 +368,12 @@ public void Subtract_SameValue_ShouldBeZero()
 [Test]
 public void Subtract_CloseValues()
 {
-    // 가까운 값의 뺄셈 - 정밀도 손실 가능성
     BigDouble a = new BigDouble(1.000001, 100);
     BigDouble b = new BigDouble(1.0, 100);
     BigDouble result = a - b;
 
-    // 1.000001e100 - 1e100 = 0.000001e100 = 1e94
     Console.WriteLine($"Result: {result.Mantissa}e{result.Exponent}");
 
-    // 대략 1e94 근처여야 함
     Assert.That(result.Exponent >= 93 && result.Exponent <= 95, Is.True,
         "1.000001e100 - 1e100 ≈ 1e94");
 }
@@ -433,19 +408,16 @@ public void Multiply_Basic()
     BigDouble b = new BigDouble(3.0, 50);
     BigDouble result = a * b;
 
-    // 2e100 * 3e50 = 6e150
     Assert.That(result == new BigDouble(6.0, 150), Is.True, "2e100 * 3e50 = 6e150");
 }
 
 [Test]
 public void Multiply_Overflow()
 {
-    // 가수 곱이 10 이상인 경우
     BigDouble a = new BigDouble(5.0, 100);
     BigDouble b = new BigDouble(5.0, 100);
     BigDouble result = a * b;
 
-    // 5e100 * 5e100 = 25e200 = 2.5e201
     Assert.That(result.Mantissa >= 2.4 && result.Mantissa <= 2.6, Is.True, "가수 2.5");
     Assert.That(result.Exponent == 201, Is.True, "지수 201");
 }
@@ -457,7 +429,6 @@ public void Divide_Basic()
     BigDouble b = new BigDouble(2.0, 100);
     BigDouble result = a / b;
 
-    // 6e150 / 2e100 = 3e50
     Assert.That(result == new BigDouble(3.0, 50), Is.True, "6e150 / 2e100 = 3e50");
 }
 
@@ -499,7 +470,6 @@ git commit -m "test: Multiply/Divide 테스트 추가"
 [Test]
 public void Normalize_MantissaInRange()
 {
-    // 정규화 후 가수는 1 <= |m| < 10
     var testCases = new[]
     {
         (0.5, 100L),
@@ -521,10 +491,8 @@ public void Normalize_MantissaInRange()
 [Test]
 public void Normalize_PreservesValue()
 {
-    // 정규화 전후 값이 같아야 함
     BigDouble a = new BigDouble(123.456, 100);
 
-    // 123.456e100 = 1.23456e102
     Assert.That(a.Mantissa >= 1.23 && a.Mantissa <= 1.24, Is.True, "가수 정규화");
     Assert.That(a.Exponent == 102, Is.True, "지수 조정");
 }
@@ -532,10 +500,8 @@ public void Normalize_PreservesValue()
 [Test]
 public void Normalize_VerySmallMantissa()
 {
-    // 매우 작은 가수
     BigDouble bd = new BigDouble(1e-10, 100);
 
-    // 1e-10 * e100 = 1e90
     Assert.That(bd.Mantissa >= 1 && bd.Mantissa < 10, Is.True);
     Assert.That(bd.Exponent == 90, Is.True);
 }
@@ -566,7 +532,6 @@ git commit -m "test: Normalize 테스트 추가"
 [Test]
 public void Parse_ExponentFormat()
 {
-    // 지수 형식 파싱
     var testCases = new[]
     {
         ("1e100", 1.0, 100L),
@@ -590,12 +555,10 @@ public void Parse_ExponentFormat()
 [Test]
 public void Parse_PlainNumber()
 {
-    // 일반 숫자 파싱
     BigDouble bd = new BigDouble("12345.6789");
 
     Console.WriteLine($"Parsed: {bd.Mantissa}e{bd.Exponent}");
 
-    // 12345.6789 ≈ 1.23456789e4
     Assert.That(bd.Exponent == 4, Is.True);
     Assert.That(Math.Abs(bd.Mantissa - 1.23456789) < 1e-5, Is.True);
 }
@@ -603,7 +566,6 @@ public void Parse_PlainNumber()
 [Test]
 public void Parse_LargeExponent()
 {
-    // 매우 큰 지수
     BigDouble bd = new BigDouble("1e999999999");
 
     Assert.That(bd.Mantissa == 1.0, Is.True);
@@ -613,17 +575,11 @@ public void Parse_LargeExponent()
 [Test]
 public void Parse_PrecisionLimit()
 {
-    // 정밀도 제한 확인 (FRACTIONAL_PART_ACCURITY = 6)
     BigDouble a = new BigDouble("1.123456789e100");
     BigDouble b = new BigDouble("1.123456e100");
 
-    // 소수점 6자리 이후는 무시될 수 있음
     Console.WriteLine($"a: {a.Mantissa}e{a.Exponent}");
     Console.WriteLine($"b: {b.Mantissa}e{b.Exponent}");
-
-    // 파싱 시 정밀도가 제한되면 같아짐
-    // 또는 다르다면 정밀도가 유지됨
-    // 결과 확인용 테스트
 }
 ```
 
@@ -655,7 +611,6 @@ public void Pow_IntegerPower()
     BigDouble a = new BigDouble(2.0, 10);
     BigDouble result = BigDouble.Pow(a, 3);
 
-    // (2e10)^3 = 8e30
     Assert.That(result.Mantissa == 8.0, Is.True);
     Assert.That(result.Exponent == 30, Is.True);
 }
@@ -664,9 +619,8 @@ public void Pow_IntegerPower()
 public void Pow_FractionalPower()
 {
     BigDouble a = new BigDouble(4.0, 100);
-    BigDouble result = BigDouble.Pow(a, 0.5);  // sqrt
+    BigDouble result = BigDouble.Pow(a, 0.5);
 
-    // sqrt(4e100) = 2e50
     Assert.That(Math.Abs(result.Mantissa - 2.0) < 0.01, Is.True, "가수 2.0");
     Assert.That(result.Exponent == 50, Is.True, "지수 50");
 }
@@ -686,7 +640,6 @@ public void Log10_Basic()
     BigDouble a = new BigDouble(5.0, 100);
     double result = BigDouble.Log10(a);
 
-    // log10(5e100) = log10(5) + 100 ≈ 100.699
     Assert.That(Math.Abs(result - 100.699) < 0.01, Is.True);
 }
 
@@ -696,7 +649,6 @@ public void Sqrt_Basic()
     BigDouble a = new BigDouble(4.0, 100);
     BigDouble result = BigDouble.Sqrt(a);
 
-    // sqrt(4e100) = 2e50
     Assert.That(Math.Abs(result.Mantissa - 2.0) < 0.01, Is.True);
     Assert.That(result.Exponent == 50, Is.True);
 }
@@ -704,10 +656,9 @@ public void Sqrt_Basic()
 [Test]
 public void Sqrt_OddExponent()
 {
-    BigDouble a = new BigDouble(4.0, 101);  // 홀수 지수
+    BigDouble a = new BigDouble(4.0, 101);
     BigDouble result = BigDouble.Sqrt(a);
 
-    // sqrt(4e101) = sqrt(40e100) = sqrt(40) * e50 ≈ 6.32e50
     Console.WriteLine($"sqrt(4e101) = {result.Mantissa}e{result.Exponent}");
     Assert.That(result.Exponent == 50, Is.True);
 }
@@ -738,17 +689,15 @@ git commit -m "test: Pow/Log/Sqrt 테스트 추가"
 [Test]
 public void Round_SmallExponent()
 {
-    BigDouble a = new BigDouble(1.5, 2);  // 150
+    BigDouble a = new BigDouble(1.5, 2);
     BigDouble result = BigDouble.Round(a);
 
-    // Round(150) = 150
     Assert.That(result == new BigDouble(150), Is.True);
 }
 
 [Test]
 public void Round_LargeExponent()
 {
-    // 지수가 MaxSignificantDigits 이상이면 그대로 반환
     BigDouble a = new BigDouble(1.5, 100);
     BigDouble result = BigDouble.Round(a);
 
@@ -758,7 +707,7 @@ public void Round_LargeExponent()
 [Test]
 public void Floor_Basic()
 {
-    BigDouble a = new BigDouble(1.9, 2);  // 190
+    BigDouble a = new BigDouble(1.9, 2);
     BigDouble result = BigDouble.Floor(a);
 
     Assert.That(result == new BigDouble(190), Is.True);
@@ -767,7 +716,7 @@ public void Floor_Basic()
 [Test]
 public void Ceiling_Basic()
 {
-    BigDouble a = new BigDouble(1.1, 2);  // 110
+    BigDouble a = new BigDouble(1.1, 2);
     BigDouble result = BigDouble.Ceiling(a);
 
     Assert.That(result == new BigDouble(110), Is.True);
@@ -776,10 +725,9 @@ public void Ceiling_Basic()
 [Test]
 public void Truncate_NegativeNumber()
 {
-    BigDouble a = new BigDouble(-1.9, 2);  // -190
+    BigDouble a = new BigDouble(-1.9, 2);
     BigDouble result = BigDouble.Truncate(a);
 
-    // Truncate(-190) = -190 (정수라서 그대로)
     Assert.That(result == new BigDouble(-190), Is.True);
 }
 ```
@@ -809,26 +757,20 @@ git commit -m "test: Round/Floor/Ceiling/Truncate 테스트 추가"
 [Test]
 public void AdjustedMantissa_SideEffect()
 {
-    // AdjustedMantissa가 내부적으로 mantissa를 수정하는 문제 확인
     BigDouble original = new BigDouble(1.23456789, 100);
     double originalMantissa = original.Mantissa;
 
-    // AdjustedMantissa 호출
     double adjusted = original.AdjustedMantissa();
 
-    // 원본이 수정되었는지 확인
     Console.WriteLine($"Original mantissa before: {originalMantissa}");
     Console.WriteLine($"Original mantissa after: {original.Mantissa}");
     Console.WriteLine($"Adjusted mantissa: {adjusted}");
-
-    // 주의: 현재 구현에서 mantissa가 Round(mantissa, 6)으로 수정됨
-    // 이것이 의도된 동작인지 버그인지 확인 필요
 }
 
 [Test]
 public void AdjustedMantissa_ConsistentResults()
 {
-    BigDouble bd = new BigDouble(1.234567, 5);  // 123456.7
+    BigDouble bd = new BigDouble(1.234567, 5);
 
     double first = bd.AdjustedMantissa();
     double second = bd.AdjustedMantissa();
@@ -862,7 +804,6 @@ git commit -m "test: AdjustedMantissa 부작용 테스트 추가"
 [Test]
 public void EdgeCase_MaxExponent()
 {
-    // 최대 지수
     BigDouble bd = new BigDouble(1.0, long.MaxValue - 1);
 
     Assert.That(bd.Exponent == long.MaxValue - 1, Is.True);
@@ -871,24 +812,20 @@ public void EdgeCase_MaxExponent()
 [Test]
 public void EdgeCase_MinExponent()
 {
-    // 최소 지수
     BigDouble bd = new BigDouble(1.0, long.MinValue + 1);
 
-    // 정상 생성 확인
     Assert.That(!BigDouble.IsNaN(bd), Is.True);
 }
 
 [Test]
 public void EdgeCase_DoublePrecisionLimit()
 {
-    // double 정밀도 한계 (약 15-17자리)
-    BigDouble a = new BigDouble(1.0000000000000001, 100);  // 16자리
-    BigDouble b = new BigDouble(1.0000000000000002, 100);  // 16자리
+    BigDouble a = new BigDouble(1.0000000000000001, 100);
+    BigDouble b = new BigDouble(1.0000000000000002, 100);
 
     Console.WriteLine($"a.Mantissa: {a.Mantissa:R}");
     Console.WriteLine($"b.Mantissa: {b.Mantissa:R}");
 
-    // double 정밀도 한계로 같을 수 있음
     if (a.Mantissa != b.Mantissa)
     {
         Assert.That(a != b, Is.True);
@@ -898,7 +835,6 @@ public void EdgeCase_DoublePrecisionLimit()
 [Test]
 public void EdgeCase_Denormalized()
 {
-    // 비정규화 숫자
     BigDouble bd = new BigDouble(double.Epsilon, 0);
 
     Console.WriteLine($"Epsilon: {bd.Mantissa}e{bd.Exponent}");
@@ -932,17 +868,14 @@ git commit -m "test: 경계값 및 극단 케이스 테스트 추가"
 [Test]
 public void GameScenario_CurrencyAccumulation()
 {
-    // 재화 누적 시나리오
     BigDouble currency = BigDouble.Zero;
-    BigDouble income = new BigDouble(1.5, 10);  // 초당 1.5e10
+    BigDouble income = new BigDouble(1.5, 10);
 
-    // 1000초 누적
     for (int i = 0; i < 1000; i++)
     {
         currency += income;
     }
 
-    // 1000 * 1.5e10 = 1.5e13
     BigDouble expected = new BigDouble(1.5, 13);
 
     Assert.That(currency.Equals(expected, 1e-10), Is.True,
@@ -952,7 +885,6 @@ public void GameScenario_CurrencyAccumulation()
 [Test]
 public void GameScenario_Purchase()
 {
-    // 구매 시나리오
     BigDouble money = new BigDouble("1.5e100");
     BigDouble price = new BigDouble("1.2e100");
 
@@ -960,7 +892,6 @@ public void GameScenario_Purchase()
 
     money -= price;
 
-    // 1.5e100 - 1.2e100 = 0.3e100 = 3e99
     Assert.That(money.Exponent == 99, Is.True);
     Assert.That(Math.Abs(money.Mantissa - 3.0) < 0.1, Is.True);
 }
@@ -968,30 +899,25 @@ public void GameScenario_Purchase()
 [Test]
 public void GameScenario_Multiplier()
 {
-    // 배율 적용 시나리오
     BigDouble baseValue = new BigDouble("1e50");
     BigDouble multiplier = new BigDouble(2.5);
 
     BigDouble result = baseValue * multiplier;
 
-    // 1e50 * 2.5 = 2.5e50
     Assert.That(result == new BigDouble(2.5, 50), Is.True);
 }
 
 [Test]
 public void GameScenario_ExponentialGrowth()
 {
-    // 지수 성장 시나리오
     BigDouble value = new BigDouble(1.0);
-    BigDouble growthRate = new BigDouble(1.1);  // 10% 성장
+    BigDouble growthRate = new BigDouble(1.1);
 
-    // 100번 성장
     for (int i = 0; i < 100; i++)
     {
         value *= growthRate;
     }
 
-    // 1.1^100 ≈ 1.38e4
     Console.WriteLine($"100번 1.1배 성장: {value.Mantissa}e{value.Exponent}");
 
     Assert.That(value.Exponent >= 3 && value.Exponent <= 5, Is.True,

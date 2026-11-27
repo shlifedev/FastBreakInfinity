@@ -2,17 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// 골드를 복잡한 연산 체인(곱셈/덧셈/뺄셈/나눗셈)으로 굴려 거대한 값을 만든 뒤,
-/// 보유 골드와 거의 일치하는 가격의 아이템을 구매할 때 판정이 어긋나지 않는지 검증.
-/// "분명 돈이 더 많은데 못 사는" 류의 비교/연산 불일치를 잡기 위한 테스트.
-/// </summary>
 public class ComplexGameScenarioTests
 {
-    /// <summary>
-    /// 비교 연산자 삼분법 검증: 두 값에 대해 &lt;, ==, &gt; 중 정확히 하나만 참이어야 하고
-    /// &gt;=, &lt;=, CompareTo가 모두 그 결과와 일치해야 함.
-    /// </summary>
     private static void AssertOrderingConsistent(BigDouble a, BigDouble b)
     {
         bool lt = a < b;
@@ -32,9 +23,6 @@ public class ComplexGameScenarioTests
         Assert.That(Math.Sign(a.CompareTo(b)), Is.EqualTo(expectedSign), "CompareTo 부호 불일치");
     }
 
-    /// <summary>
-    /// money >= price 라면 반드시 구매가 가능해야 하고, 잔액이 음수가 되면 안 됨.
-    /// </summary>
     private static void AssertPurchasable(BigDouble money, BigDouble price)
     {
         Assert.That(money >= price, Is.True, "money >= price 인데 구매 판정 실패");
@@ -51,7 +39,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_ExactPrice_AfterLongOperationChain()
     {
-        // 동일한 연산 체인으로 돈과 가격을 각각 계산 → 정확히 같아야 하고 전액 구매 가능
         static BigDouble BuildValue()
         {
             BigDouble v = new BigDouble(1234.5678);
@@ -77,7 +64,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_CommutedComputation_SamePrice()
     {
-        // 곱셈 교환은 IEEE에서도 비트 단위로 동일 → 다른 순서로 계산해도 같아야 함
         BigDouble a = new BigDouble("1.7320508e500");
         BigDouble b = new BigDouble("2.7182818e300");
         BigDouble c = new BigDouble("3.1415926e799");
@@ -93,8 +79,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_AssociativityDrift_JudgmentStaysConsistent()
     {
-        // (a+b)+c 와 a+(b+c)는 부동소수점 특성상 미세하게 다를 수 있음.
-        // 핵심은 "다르더라도 비교 판정이 모순되지 않는 것" — 작은 쪽 가격은 큰 쪽 돈으로 반드시 구매 가능.
         BigDouble a = new BigDouble("1.111111111111111e1000");
         BigDouble b = new BigDouble("7.777777777777777e999");
         BigDouble c = new BigDouble("3.333333333333333e998");
@@ -113,7 +97,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_SlightlyCheaperItem_AlwaysBuyable()
     {
-        // 가격이 돈보다 아주 미세하게(상대 1e-12) 싸면 반드시 구매 가능해야 함
         BigDouble money = new BigDouble("5.5555e5555");
         BigDouble price = money * new BigDouble(1.0 - 1e-12);
 
@@ -132,7 +115,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_SlightlyMoreExpensiveItem_NeverBuyable()
     {
-        // 가격이 돈보다 미세하게(상대 1e-12) 비싸면 절대 구매 불가
         BigDouble money = new BigDouble("5.5555e5555");
         BigDouble price = money * new BigDouble(1.0 + 1e-12);
 
@@ -144,7 +126,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_FullSpend_RepeatedEarnAndDrain()
     {
-        // 매번 다른 연산 체인으로 돈을 벌고, 전액과 일치하는 가격으로 모두 소진 — 항상 0으로 떨어져야 함
         BigDouble money = BigDouble.Zero;
 
         for (int i = 1; i <= 30; i++)
@@ -155,7 +136,7 @@ public class ComplexGameScenarioTests
             earned /= 3;
 
             money += earned;
-            BigDouble price = money; // 보유 전액과 동일한 가격
+            BigDouble price = money;
 
             AssertPurchasable(money, price);
             money -= price;
@@ -167,7 +148,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_HalfDrain_NeverGoesNegative()
     {
-        // 성장(곱셈+수입)과 절반 지출을 반복 — 잔액이 음수가 되거나 판정이 어긋나면 안 됨
         BigDouble money = new BigDouble("1e10");
         BigDouble income = new BigDouble("3.7e9");
 
@@ -187,8 +167,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_AccumulatedIncome_VsBulkPrice()
     {
-        // 수입을 1000번 누적한 돈 vs (수입 * 1000)으로 책정된 가격.
-        // 부동소수점 누적 오차로 미세하게 다를 수 있지만, 판정은 모순 없어야 하고 차이는 극미해야 함
         BigDouble income = new BigDouble(1.23456789, 45);
         BigDouble money = BigDouble.Zero;
 
@@ -210,7 +188,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_DivideMultiplyRoundTrip()
     {
-        // 가격을 money/7*7 로 책정 — 왕복 연산 오차가 있어도 판정은 일관돼야 함
         BigDouble money = new BigDouble("8.8888888888888e8888");
         BigDouble price = money / 7 * 7;
 
@@ -223,7 +200,6 @@ public class ComplexGameScenarioTests
         }
         else
         {
-            // 왕복 오차로 가격이 미세하게 비싸진 경우 — 부족분은 상대 1e-12 미만이어야 함
             BigDouble shortfall = price - money;
             Assert.That(
                 shortfall < money * new BigDouble(1e-12),
@@ -236,7 +212,6 @@ public class ComplexGameScenarioTests
     [Test]
     public void Purchase_NearEqualAtHugeExponent()
     {
-        // 거대 지수(e100000)에서 마지막 유효숫자 한 끗 차이의 구매 판정
         BigDouble money = new BigDouble("1.000000000000001e100000");
         BigDouble priceCheaper = new BigDouble("1.000000000000000e100000");
         BigDouble priceExpensive = new BigDouble("1.000000000000002e100000");

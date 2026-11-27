@@ -2,13 +2,8 @@ using LD.Numeric.IdleNumber;
 
 namespace LD.Numeric.Test;
 
-/// <summary>
-/// BigDouble Normalize 및 문자열 파싱 테스트
-/// </summary>
 public class NormalizeParseTests
 {
-    // ===== Normalize 테스트 =====
-
     [Test]
     public void Normalize_MantissaInRange()
     {
@@ -44,8 +39,6 @@ public class NormalizeParseTests
         Assert.That(bd.Mantissa >= 1 && bd.Mantissa < 10, Is.True);
         Assert.That(bd.Exponent == 90, Is.True);
     }
-
-    // ===== Parse 테스트 =====
 
     [Test]
     public void Parse_ExponentFormat()
